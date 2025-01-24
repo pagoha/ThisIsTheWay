@@ -2,7 +2,7 @@
 # >> pip install boto3 pandas
 # This script performs the following tasks:
 # Connects to the EC2 service in the specified region.
-# Retrieves details of EC2 instances, including state, instance type, IP addresses, launch time, security groups, and tags.
+# Retrieves details of EC2 instances, including state, instance type, IP addresses, launch time, security groups, associated snapshots, associated aws backups, and tags.
 # Gathers information on attached EBS volumes, Elastic IP addresses, and network interfaces.
 # Exports the collected information to a CSV file.
 # When you run the script, it will prompt you to enter the region [eg., us-east-1]
