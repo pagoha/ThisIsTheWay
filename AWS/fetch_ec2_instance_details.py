@@ -2,8 +2,7 @@
 # >> pip install boto3 pandas
 # This script performs the following tasks:
 # Connects to the EC2 service in the specified region.
-# Retrieves details of EC2 instances, including state, instance type, IP addresses, launch time, security groups, associated snapshots, associated aws backups, and tags.
-# Gathers information on attached EBS volumes, Elastic IP addresses, and network interfaces.
+# Retrieves details of EC2 instances, including: Instance ID, State, Instance Type, Public IP, Private IP, Launch Time, VPC ID, Subnet ID, Tags, AMI ID, AMI Name, Security Groups, EBS Volumes, Associated Snapshots, Elastic IPs, Network Interfaces,	Associated Backups,	Load Balancer Targets,	& CloudWatch Alarms.
 # Exports the collected information to a CSV file.
 # When you run the script, it will prompt you to enter the region [eg., us-east-1]
 
@@ -14,8 +13,14 @@ from datetime import datetime
 def get_ec2_details(region):
     ec2_client = boto3.client('ec2', region_name=region)
     ec2_resource = boto3.resource('ec2', region_name=region)
+    elb_client = boto3.client('elbv2', region_name=region)
+    cloudwatch_client = boto3.client('cloudwatch', region_name=region)
     instances = ec2_client.describe_instances()['Reservations']
     instance_data = []
+
+    # Get all target groups
+    target_groups = elb_client.describe_target_groups()['TargetGroups']
+    target_group_arns = [tg['TargetGroupArn'] for tg in target_groups]
 
     for reservation in instances:
         for instance in reservation['Instances']:
@@ -33,6 +38,19 @@ def get_ec2_details(region):
                 'Subnet ID': instance.get('SubnetId', 'N/A'),
                 'Tags': ', '.join([f"{tag['Key']}:{tag['Value']}" for tag in instance.get('Tags', [])]),
             }
+
+            # Get AMI information
+            if 'ImageId' in instance:
+                try:
+                    image = ec2_client.describe_images(ImageIds=[instance['ImageId']])['Images'][0]
+                    instance_info['AMI ID'] = image['ImageId']
+                    instance_info['AMI Name'] = image.get('Name', 'N/A')
+                except Exception as e:
+                    instance_info['AMI ID'] = instance['ImageId']
+                    instance_info['AMI Name'] = f"Error: {str(e)}"
+            else:
+                instance_info['AMI ID'] = 'N/A'
+                instance_info['AMI Name'] = 'N/A'
 
             # Get Security Groups
             security_groups = [f"{sg['GroupId']} ({sg['GroupName']})" for sg in instance['SecurityGroups']]
@@ -73,6 +91,27 @@ def get_ec2_details(region):
                 instance_info['Associated Backups'] = ', '.join(backup_info)
             except Exception as e:
                 instance_info['Associated Backups'] = f"Error retrieving backups: {str(e)}"
+
+            # Get Load Balancer Target information
+            instance_info['Load Balancer Targets'] = []
+            for tg_arn in target_group_arns:
+                targets = elb_client.describe_target_health(TargetGroupArn=tg_arn)['TargetHealthDescriptions']
+                for target in targets:
+                    if target['Target']['Id'] == instance_id:
+                        tg_info = elb_client.describe_target_groups(TargetGroupArns=[tg_arn])['TargetGroups'][0]
+                        instance_info['Load Balancer Targets'].append(f"{tg_info['TargetGroupName']} ({tg_arn})")
+            instance_info['Load Balancer Targets'] = ', '.join(instance_info['Load Balancer Targets'])
+
+            # Check for associated CloudWatch alarms
+            try:
+                alarms = cloudwatch_client.describe_alarms_for_metric(
+                    Dimensions=[{'Name': 'InstanceId', 'Value': instance_id}],
+                    MetricName='CPUUtilization',
+                    Namespace='AWS/EC2'
+                )['MetricAlarms']
+                instance_info['CloudWatch Alarms'] = ', '.join([alarm['AlarmName'] for alarm in alarms]) if alarms else 'No alarms'
+            except Exception as e:
+                instance_info['CloudWatch Alarms'] = f"Error retrieving alarms: {str(e)}"
 
             instance_data.append(instance_info)
 
