@@ -45,3 +45,13 @@ Utilizes boto3, the AWS SDK for Python, to interact with various AWS services (E
 
 Error Handling:
 Includes basic error handling to manage potential issues when retrieving data from AWS services.
+
+================================================================================================================
+Before running the script, make sure you have boto3 and pandas installed:
+# pip install boto3 pandas
+
+This script performs the following tasks:
+- Connects to the EC2 service in the specified region.
+- Retrieves details of EC2 instances, including: Instance ID, State, Instance Type, Public IP, Private IP, Launch Time, VPC ID, Subnet ID, Tags, AMI ID, AMI Name, Security Groups, EBS Volumes, Associated Snapshots, Elastic IPs, Network Interfaces,	Associated Backups,	Load Balancer Targets,	& CloudWatch Alarms.
+- Exports the collected information to a CSV file.
+- When you run the script, it will prompt you to enter the region [eg., us-east-1]
