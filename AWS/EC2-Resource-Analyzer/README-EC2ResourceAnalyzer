@@ -1,5 +1,5 @@
-EC2 Resource Analyzer
-This script provides a comprehensive overview of EC2 instances and their associated resources in a specified AWS region, which can be useful for inventory management, compliance checks, or general AWS infrastructure auditing.
+EC2 Resource Analyzer [JAN2025]
+This script [EC2_Resource_Analyzer.py] provides a comprehensive overview of EC2 instances and their associated resources in a specified AWS region, which can be useful for inventory management, compliance checks, or general AWS infrastructure auditing.
 
 
 EC2 Instance Details:
