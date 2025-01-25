@@ -78,8 +78,11 @@ def get_ec2_details(region):
 
             # Get Network Interfaces
             interfaces = ec2_instance.network_interfaces
-            eni_info = [f"{eni.id} ({eni.private_ip_address})" for eni in interfaces]
-            instance_info['Network Interfaces'] = ', '.join(eni_info)
+            if interfaces:
+                eni_info = [f"{eni.id} ({eni.private_ip_address})" for eni in interfaces]
+                instance_info['Network Interfaces'] = ', '.join(eni_info)
+            else:
+                instance_info['Network Interfaces'] = 'No network interfaces'
 
             # Get associated backups (AWS Backup)
             backup_client = boto3.client('backup', region_name=region)
