@@ -34,12 +34,12 @@ a. Using the AWS CLI:
 aws configure
 
 b. Manually creating/editing the credentials file:
-~/.aws/credentials (Linux/macOS)
+- Linux/MacOS location:  ~/.aws/credentials
+- Windows location:  C:\Users\USERNAME\.aws\credentials (Windows)
 
-C:\Users\USERNAME\.aws\credentials (Windows)
+
 Example credentials file:
-
-
+-------------------------------------------
 [default]
 aws_access_key_id = YOUR_ACCESS_KEY
 aws_secret_access_key = YOUR_SECRET_KEY
@@ -47,17 +47,18 @@ aws_secret_access_key = YOUR_SECRET_KEY
 [prod]
 aws_access_key_id = ANOTHER_ACCESS_KEY
 aws_secret_access_key = ANOTHER_SECRET_KEY
+-------------------------------------------
+
 
 Required IAM Permissions - The user or role must have these IAM permissions:
-iam:ListUsers
-iam:ListAccessKeys
-iam:GetAccessKeyLastUsed
-sts:GetCallerIdentity
+- iam:ListUsers
+- iam:ListAccessKeys
+- iam:GetAccessKeyLastUsed
+- sts:GetCallerIdentity
 
-==========
+
 Example minimal policy:
-
-
+-------------------------------------------
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -73,10 +74,11 @@ Example minimal policy:
         }
     ]
 }
-==========
+-------------------------------------------
+
 
 Usage
-On Linux/macOS:
+On Linux/MacOS:
 - Download the script
 - Make the script executable: [chmod +x iamAccessKeysAnalyzer.py]
 - Run the script: [./iamAccessKeysAnalyzer.py]
@@ -86,7 +88,6 @@ On Windows (PowerShell):
 - Run the script: [python iamAccessKeysAnalyzer.py]
 
 Using the Script
-
 Follow the interactive prompts:
 - Select an AWS profile
 - Confirm the account details
@@ -131,10 +132,12 @@ Recommended actions:
 
 ==========================================================================================================
 
+
 Security Considerations
 - This script requires IAM permissions to read user and access key information
 - The report includes sensitive information about access keys (but not the secret keys)
 - Consider who has access to the generated reports
+
 
 Best Practices
 - Run this script regularly (e.g., weekly or monthly)
@@ -144,8 +147,7 @@ Best Practices
 - Implement automated key rotation
 
 
-Troubleshooting
-Common Issues
+Troubleshooting Common Issues
 Permission Denied:
 Error: An error occurred (AccessDenied) when calling the ListUsers operation: User is not authorized to perform: iam:ListUsers
 Solution: Ensure your user has the required IAM permissions listed in the prerequisites.
@@ -161,7 +163,7 @@ Solution: Verify the profile name exists in your AWS configuration.
 Empty Reports:
 Found 0 IAM users. Retrieving access keys...
 Successfully processed all 0 users.
-Solution: If you're using a role with restricted permissions, ensure it has access to list all IAM users. Alternatively, check if you're in the correct AWS account.
+Solution: If you're using a role with restricted permissions, ensure it has access to list all IAM users. Alternatively, check if you're in the correct AWS account and confirm if there are actually any iam users ocnfigured. 
 
 Use Cases
 - Security Audits: Identify potential security risks from unused access keys
