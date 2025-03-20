@@ -163,7 +163,7 @@ Solution: Verify the profile name exists in your AWS configuration.
 Empty Reports:
 Found 0 IAM users. Retrieving access keys...
 Successfully processed all 0 users.
-Solution: If you're using a role with restricted permissions, ensure it has access to list all IAM users. Alternatively, check if you're in the correct AWS account and confirm if there are actually any iam users ocnfigured. 
+Solution: If you're using a role with restricted permissions, ensure it has access to list all IAM users. Alternatively, check if you're in the correct AWS account and confirm if there are actually any iam users configured. 
 
 Use Cases
 - Security Audits: Identify potential security risks from unused access keys
