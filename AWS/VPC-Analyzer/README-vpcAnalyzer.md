@@ -64,7 +64,7 @@ The script generates two files:
 Both files are named with the AWS account ID and a timestamp for easy identification and versioning.
 
 ## Sample Output
-
+```
 ================================================================================
                         AWS VPC INFORMATION REPORT
                           Account ID: 123456789012
@@ -232,6 +232,7 @@ Security Groups (3):
   [Additional subnets would be listed here...]
 
 ================================================================================
+```
 
 This sample report showcases:
 
