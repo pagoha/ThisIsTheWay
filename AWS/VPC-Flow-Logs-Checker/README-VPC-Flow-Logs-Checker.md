@@ -44,7 +44,7 @@ Install the required Python packages:
 
 ```bash
 pip install boto3 botocore pandas tabulate
-
+```
 
 ```
 Below is an example of the Terminal Output during execution:
