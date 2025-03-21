@@ -1,4 +1,4 @@
-Thie python script performs a VPC analysis then lists all VPCs in the account. It checks for VPC Flow Logs status (ACTIVE, INACTIVE, NOT CONFIGURED) and provides additional info on each VPC and its Flow Logs.
+This python script [vpcFlowLogsChecker.py] performs a VPC analysis then lists all VPCs in the account. It checks for VPC Flow Logs status (ACTIVE, INACTIVE, NOT CONFIGURED) and provides additional info on each VPC and its Flow Logs.
 
 Features of this script:
 
@@ -28,3 +28,39 @@ AWS CLI configured with at least one profile
 
 Installation, run:
 [pip install boto3 botocore pandas tabulate]
+
+Below is an example of what the output text file (vpc_flow_logs_status_123456789012_20250321_131915.txt) would look like:
+
+========================================================================================================
+                                    VPC FLOW LOGS STATUS REPORT                                    
+                                   Account ID: 123456789012                                   
+                              Generated at: 2025-03-21 13:19:15                              
+========================================================================================================
+
++----------------+--------------------+----------------+----------------+---------------------+-----------------------------------------------+--------------------------------------+
+| VPC ID         | VPC Name           | CIDR Block     | Flow Logs      | Log Destination Type | Log Destination                              | Flow Log ID                           |
++----------------+--------------------+----------------+----------------+---------------------+-----------------------------------------------+--------------------------------------+
+| vpc-a1b2c3d4e5 | Production-VPC     | 10.0.0.0/16    | ACTIVE         | cloud-watch-logs    | arn:aws:logs:us-east-1:123456789012:log-group | fl-abcdef01234567890                 |
+| vpc-f6g7h8i9j0 | Staging-VPC        | 10.1.0.0/16    | ACTIVE         | s3                  | arn:aws:s3:::flow-logs-bucket/staging        | fl-123456abcdef78901                 |
+| vpc-k1l2m3n4o5 | Development-VPC    | 10.2.0.0/16    | NOT CONFIGURED | N/A                 | N/A                                           | N/A                                  |
+| vpc-p6q7r8s9t0 | Test-VPC           | 172.16.0.0/16  | INACTIVE       | cloud-watch-logs    | arn:aws:logs:us-east-1:123456789012:log-group | fl-abcdef98765432109                 |
+| vpc-u1v2w3x4y5 | Management-VPC     | 192.168.0.0/16 | ACTIVE         | cloud-watch-logs    | arn:aws:logs:us-east-1:123456789012:log-group | fl-mnopqr78901234567                 |
+| vpc-z6a7b8c9d0 | Sandbox-VPC        | 10.3.0.0/16    | NOT CONFIGURED | N/A                 | N/A                                           | N/A                                  |
+| vpc-e1f2g3h4i5 | DataProcessing-VPC | 10.4.0.0/16    | ACTIVE         | s3                  | arn:aws:s3:::flow-logs-bucket/data           | fl-567890abcdefghij1                 |
+| vpc-j6k7l8m9n0 | Legacy-VPC         | 192.169.0.0/16 | NOT CONFIGURED | N/A                 | N/A                                           | N/A                                  |
++----------------+--------------------+----------------+----------------+---------------------+-----------------------------------------------+--------------------------------------+
+
+SUMMARY:
+------------------------------------------------------------------------------------------------------------------------
+Total VPCs: 8
+VPCs with Active Flow Logs: 4
+VPCs with Inactive Flow Logs: 1
+VPCs without Flow Logs: 3
+
+RECOMMENDATIONS:
+------------------------------------------------------------------------------------------------------------------------
+• Consider enabling Flow Logs for the 3 VPCs that don't have them
+  Flow Logs help with network monitoring, troubleshooting, and security analysis
+• Review the 1 VPCs with inactive Flow Logs and consider activating them
+
+========================================================================================================
