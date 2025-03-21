@@ -29,7 +29,35 @@ AWS CLI configured with at least one profile
 Installation, run:
 [pip install boto3 botocore pandas tabulate]
 
-Below is an example of what the output text file (vpc_flow_logs_status_123456789012_20250321_131915.txt) would look like:
+
+Below is an example of the Terminal Output during execution:
+================================================================================
+                          AWS VPC FLOW LOGS CHECKER                          
+================================================================================
+
+This script identifies:
+  1. VPCs with Flow Logs enabled and active
+  2. VPCs with Flow Logs configured but inactive
+  3. VPCs without Flow Logs configured
+
+Available AWS profiles:
+1. default
+2. development
+3. production
+
+Enter profile number or name (or press Enter for default): 3
+
+AWS Account Information:
+Profile: production
+Account ID: 123456789012
+IAM ARN: arn:aws:iam::123456789012:user/security-admin
+
+Is this the correct account? (yes/no): yes
+
+Fetching and analyzing VPC Flow Logs status...
+Gathering VPC information...
+Found 8 VPCs
+Processing VPC flow logs status...
 
 ========================================================================================================
                                     VPC FLOW LOGS STATUS REPORT                                    
@@ -64,3 +92,6 @@ RECOMMENDATIONS:
 • Review the 1 VPCs with inactive Flow Logs and consider activating them
 
 ========================================================================================================
+
+Detailed text report saved to: vpc_flow_logs_status_123456789012_20250321_131915.txt
+CSV data saved to: vpc_flow_logs_status_123456789012_20250321_131915.csv
