@@ -1,33 +1,50 @@
-This python script [vpcFlowLogsChecker.py] performs a VPC analysis then lists all VPCs in the account. It checks for VPC Flow Logs status (ACTIVE, INACTIVE, NOT CONFIGURED) and provides additional info on each VPC and its Flow Logs.
+# VPC Flow Logs Checker
 
-Features of this script:
+This Python script (`vpcFlowLogsChecker.py`) performs a comprehensive VPC analysis across AWS accounts. It lists all VPCs and checks their Flow Logs status (ACTIVE, INACTIVE, or NOT CONFIGURED), providing detailed information on each VPC and its associated Flow Logs configuration.
 
-AWS Credentials/Profile Selection:
-Lists all available AWS profiles
-Allows selection by number or name
-Uses default profile if none selected
+## Features
 
-Account Confirmation:
-Shows account ID and IAM ARN before proceeding
-Requires explicit confirmation to continue
+### AWS Credentials/Profile Selection:
+- Lists all available AWS profiles
+- Allows selection by number or name
+- Uses default profile if none selected
 
-Comprehensive Reporting:
-Displays a formatted terminal report
-Provides summary statistics
-Includes recommendations based on findings
-Exports both text and CSV reports with timestamps and account ID
+### Account Confirmation:
+- Shows account ID and IAM ARN before proceeding
+- Requires explicit confirmation to continue
 
-Error Handling:
-Comprehensive error handling throughout
-Graceful handling of keyboard interrupts
+### VPC Analysis:
+- Lists all VPCs in the account
+- Checks for VPC Flow Logs status (ACTIVE, INACTIVE, NOT CONFIGURED)
+- Shows detailed information about each VPC and its Flow Logs
 
-Requirements:
-Python 3.6+
-Required packages: boto3, botocore, pandas, tabulate
-AWS CLI configured with at least one profile
+### Comprehensive Reporting:
+- Displays a formatted terminal report
+- Provides summary statistics
+- Includes recommendations based on findings
+- Exports both text and CSV reports with timestamps and account ID
 
-Installation, run:
-[pip install boto3 botocore pandas tabulate]
+### Error Handling:
+- Comprehensive error handling throughout
+- Graceful handling of keyboard interrupts
+
+## Requirements
+
+- Python 3.6+
+- Required packages:
+  - boto3
+  - botocore
+  - pandas
+  - tabulate
+- AWS CLI configured with at least one profile
+
+## Installation
+
+Install the required Python packages:
+
+```bash
+pip install boto3 botocore pandas tabulate
+
 
 ```
 Below is an example of the Terminal Output during execution:
