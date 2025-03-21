@@ -1,0 +1,30 @@
+Thie python script performs a VPC analysis then lists all VPCs in the account. It checks for VPC Flow Logs status (ACTIVE, INACTIVE, NOT CONFIGURED) and provides additional info on each VPC and its Flow Logs.
+
+Features of this script:
+
+AWS Credentials/Profile Selection:
+Lists all available AWS profiles
+Allows selection by number or name
+Uses default profile if none selected
+
+Account Confirmation:
+Shows account ID and IAM ARN before proceeding
+Requires explicit confirmation to continue
+
+Comprehensive Reporting:
+Displays a formatted terminal report
+Provides summary statistics
+Includes recommendations based on findings
+Exports both text and CSV reports with timestamps and account ID
+
+Error Handling:
+Comprehensive error handling throughout
+Graceful handling of keyboard interrupts
+
+Requirements:
+Python 3.6+
+Required packages: boto3, botocore, pandas, tabulate
+AWS CLI configured with at least one profile
+
+Installation, run:
+[pip install boto3 botocore pandas tabulate]
