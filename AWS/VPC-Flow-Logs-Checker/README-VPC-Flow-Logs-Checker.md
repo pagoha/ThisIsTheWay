@@ -29,7 +29,7 @@ AWS CLI configured with at least one profile
 Installation, run:
 [pip install boto3 botocore pandas tabulate]
 
-
+```
 Below is an example of the Terminal Output during execution:
 ================================================================================
                           AWS VPC FLOW LOGS CHECKER                          
@@ -95,3 +95,4 @@ RECOMMENDATIONS:
 
 Detailed text report saved to: vpc_flow_logs_status_123456789012_20250321_131915.txt
 CSV data saved to: vpc_flow_logs_status_123456789012_20250321_131915.csv
+```
