@@ -1,3 +1,14 @@
+# AWS CLI - Powershell Command To List Instances and Tags
+# Run this script in your PowerShell terminal by copying and pasting the whole script.
+# This script will output a text file showing a list of your EC2 instances, their names (if available), and their tags, with proper separation between instances. It will also show total instances and region at bottom of file.
+# 
+# Pre-requisite:
+# - Make sure your AWS Config File is configured
+# - Run [aws sso login] to authenticate and start sso session
+# - Run [aws s3 ls --profile <INSERTT Profile Name>] to confirm access
+# - Update the command/code with the AWS Profile name you want to use before running
+# - Copy and paste [Ctrl V] the whole code into your terminal window then hit enter to run
+
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $fileName = "EC2_Instances_Tags_Report_$timestamp.txt"
 
