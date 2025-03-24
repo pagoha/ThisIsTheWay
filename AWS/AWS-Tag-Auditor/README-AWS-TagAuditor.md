@@ -57,7 +57,8 @@ The script will:
 - 🔄 Retrieve all tagged resources across your account
 - 📊 Analyze tag usage and generate reports
 - 💾 Save results to both CSV and text files
-- 📊 Sample Output
+
+## 📊 Sample Output
 
 Console Display
 ```
@@ -112,6 +113,75 @@ Text Report (tag_audit_report_[account-id]_[timestamp].txt):
 - Formatted summary of tag analysis
 --Service and tag key statistics
 --Recommendations and best practices
+
+
+Text Report Example (tag_audit_report_123456789012_20250321_172530.txt)
+```
+====================================================================================================
+                                        AWS TAG AUDIT REPORT
+                                      Account ID: 123456789012
+                               Generated at: 2025-03-21 17:25:30
+====================================================================================================
+
+==================================== SUMMARY ====================================
+
+Total resources analyzed: 342
+Resources with tags: 312
+Untagged resources: 30
+Unique tag keys found: 18
+
+========================= SERVICES WITH TAGGED RESOURCES =========================
+AWS Service                    | Count     | Percentage
+---------------------------------------------------------------------------------------------
+ec2                            | 124       | 36.3%
+s3                             | 78        | 22.8%
+lambda                         | 53        | 15.5%
+rds                            | 27        | 7.9%
+dynamodb                       | 21        | 6.1%
+cloudformation                 | 19        | 5.6%
+iam                            | 12        | 3.5%
+cloudfront                     | 8         | 2.3%
+
+================================= TAG KEY USAGE =================================
+Tag Key                        | Count     | Percentage
+---------------------------------------------------------------------------------------------
+Name                           | 289       | 84.5%
+Environment                    | 245       | 71.6%
+Project                        | 221       | 64.6%
+Department                     | 183       | 53.5%
+Owner                          | 176       | 51.5%
+CostCenter                     | 153       | 44.7%
+Application                    | 124       | 36.3%
+CreatedBy                      | 98        | 28.7%
+CreatedDate                    | 87        | 25.4%
+ManagedBy                      | 76        | 22.2%
+Team                           | 65        | 19.0%
+Security                       | 42        | 12.3%
+Stage                          | 39        | 11.4%
+Backup                         | 37        | 10.8%
+StackId                        | 19        | 5.6%
+AutomatedBy                    | 15        | 4.4%
+ComplianceStatus               | 12        | 3.5%
+DataClassification             | 9         | 2.6%
+
+============================== RECOMMENDATIONS ==============================
+
+Untagged resources (first 5):
+  - arn:aws:ec2:us-east-1:123456789012:instance/i-0abc123def456789a
+  - arn:aws:s3:::untagged-bucket-example-1
+  - arn:aws:lambda:us-east-1:123456789012:function:untagged-function
+  - arn:aws:ec2:us-east-1:123456789012:volume/vol-0abc123def456789a
+  - arn:aws:rds:us-east-1:123456789012:db:untagged-db-instance
+  ... and 25 more
+
+Tagging Best Practices:
+  1. Implement mandatory tags (e.g., 'Environment', 'Owner', 'Project', 'Cost-Center')
+  2. Use AWS Tag Editor to apply tags in bulk
+  3. Consider using AWS Config to enforce tagging policies
+  4. Set up Tag Policies in AWS Organizations for consistency
+
+====================================================================================================
+```
 
 ## 🔧 AWS Permissions Required
 The script requires the following AWS permissions:
