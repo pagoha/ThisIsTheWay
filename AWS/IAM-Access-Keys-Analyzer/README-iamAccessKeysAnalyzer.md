@@ -194,3 +194,5 @@ MIT License
 
 ## 👥 Contributing
 Contributions are welcome!
+
+Made with ❤️ by [pagoha]
