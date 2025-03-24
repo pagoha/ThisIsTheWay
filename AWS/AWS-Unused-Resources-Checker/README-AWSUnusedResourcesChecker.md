@@ -51,6 +51,88 @@ The scanner checks for unused resources across multiple AWS services:
 - CloudFormation Stacks (failed/rolled back)
 - Elastic Beanstalk Environments (idle)
 
+
+## ⚙️ Installation
+
+```
+Requirements
+- Python 3.6+
+- AWS credentials configured (either as environment variables, in ~/.aws/credentials, or via an IAM role)
+- The following IAM permissions:
+-- Read-only permissions for each service being scanned
+-- sts:GetCallerIdentity permission
+```
+
+Clone this repository:
+```bash
+git clone https://github.com/yourusername/aws-unused-resources-scanner.git
+cd aws-unused-resources-scanner
+```
+Install required dependencies:
+```
+pip install boto3
+```
+
+## 🚀 Usage
+When you run the AWSUnusedResourcesChecker.py script, here's the step-by-step flow and the prompts you'll encounter:
+
+Script Launch: You start by running the script with either:
+```
+python AWSUnusedResourcesChecker.py
+```
+or specifying a profile:
+```
+python AWSUnusedResourcesChecker.py --profile your-profile-name
+```
+AWS Profile Selection:
+
+If you didn't specify a profile with the --profile flag, you'll see this prompt:
+```
+Enter the AWS profile name to use: 
+```
+You should enter the name of an AWS profile configured in your ~/.aws/credentials file
+
+Profile Confirmation:
+
+The script will attempt to validate your credentials and show you information about the AWS account:
+```
+Using AWS profile: your-profile-name
+Account: 123456789012
+User ARN: arn:aws:iam::123456789012:user/your-username
+Scanning Progress:
+```
+
+You'll see a message that scanning has begun:
+```
+Scanning for unused resources. This may take several minutes...
+There are no further prompts during the scanning process, but it may take a few minutes to complete depending on the size of your AWS account
+```
+Results Summary:
+
+When scanning is complete, you'll see a summary of what was found:
+```
+Unused resources found:
+- 2 Unassociated Elastic IPs
+- 3 Orphaned EBS Volumes
+- 4 Old EBS Snapshots
+- 2 Stopped EC2 Instances
+...
+```
+Or if nothing was found:
+```
+No unused resources found.
+```
+Report Generation:
+
+The script will automatically generate a detailed report file:
+```
+Findings have been written to aws_unused_resources_20250322_155236.txt
+```
+The filename includes the current date and time
+There are no other interactive prompts during execution. The only input required from the user is the AWS profile name if it wasn't provided as a command-line argument.
+
+If there are any permission issues or other errors during the scanning process, these will be captured in the final report under the "Errors" section, but they won't interrupt the scanning process.
+
 ## 📊 Sample Report
 ```
 # AWS Unused Resources Report
@@ -126,84 +208,8 @@ Idle DynamoDB Tables:
    - Implement resource tagging standards to better track resource ownership
    - Consider using AWS Cost Explorer to identify additional savings
 ```  
-## ⚙️ Installation
 
-1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/aws-unused-resources-scanner.git
-cd aws-unused-resources-scanner
-```
-Install required dependencies:
-```
-pip install boto3
-```
-## 🚀 Usage
-When you run the AWSUnusedResourcesChecker.py script, here's the step-by-step flow and the prompts you'll encounter:
 
-Script Launch: You start by running the script with either:
-```
-python AWSUnusedResourcesChecker.py
-```
-or specifying a profile:
-```
-python AWSUnusedResourcesChecker.py --profile your-profile-name
-```
-AWS Profile Selection:
-
-If you didn't specify a profile with the --profile flag, you'll see this prompt:
-```
-Enter the AWS profile name to use: 
-```
-You should enter the name of an AWS profile configured in your ~/.aws/credentials file
-
-Profile Confirmation:
-
-The script will attempt to validate your credentials and show you information about the AWS account:
-```
-Using AWS profile: your-profile-name
-Account: 123456789012
-User ARN: arn:aws:iam::123456789012:user/your-username
-Scanning Progress:
-```
-
-You'll see a message that scanning has begun:
-```
-Scanning for unused resources. This may take several minutes...
-There are no further prompts during the scanning process, but it may take a few minutes to complete depending on the size of your AWS account
-```
-Results Summary:
-
-When scanning is complete, you'll see a summary of what was found:
-```
-Unused resources found:
-- 2 Unassociated Elastic IPs
-- 3 Orphaned EBS Volumes
-- 4 Old EBS Snapshots
-- 2 Stopped EC2 Instances
-...
-```
-Or if nothing was found:
-```
-No unused resources found.
-```
-Report Generation:
-
-The script will automatically generate a detailed report file:
-```
-Findings have been written to aws_unused_resources_20250322_155236.txt
-```
-The filename includes the current date and time
-There are no other interactive prompts during execution. The only input required from the user is the AWS profile name if it wasn't provided as a command-line argument.
-
-If there are any permission issues or other errors during the scanning process, these will be captured in the final report under the "Errors" section, but they won't interrupt the scanning process.
-```
-Requirements
-- Python 3.6+
-- AWS credentials configured (either as environment variables, in ~/.aws/credentials, or via an IAM role)
-- The following IAM permissions:
--- Read-only permissions for each service being scanned
--- sts:GetCallerIdentity permission
-```
 ## 📝 IAM Permissions
 The scanner requires read-only permissions for the services it's checking. A sample IAM policy is provided below:
 ```
