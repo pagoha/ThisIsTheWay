@@ -235,20 +235,19 @@ Security Groups (3):
 ```
 
 This sample report showcases:
-
-General VPC information including CIDR blocks, DNS settings, and tags.
-Internet Gateway details.
-NAT Gateways with their states and IP addresses.
-VPC Endpoints.
-VPC Peering Connections.
-Flow Logs configuration.
-Network ACLs with their inbound and outbound rules.
-Security Groups summary.
-Detailed Subnet information including:
-CIDR blocks and IPv6 information
-Availability Zone
-Network ACL association
-Route Table details with routes
-EC2 instances within the subnet
+- General VPC information including CIDR blocks, DNS settings, and tags.
+- Internet Gateway details.
+- NAT Gateways with their states and IP addresses.
+- VPC Endpoints.
+- VPC Peering Connections.
+- Flow Logs configuration.
+- Network ACLs with their inbound and outbound rules.
+- Security Groups summary.
+- Detailed Subnet information including:
+- CIDR blocks and IPv6 information
+- Availability Zone
+- Network ACL association
+- Route Table details with routes
+- EC2 instances within the subnet
 
 The actual report would be more extensive, especially for accounts with multiple VPCs or more complex networking setups. The JSON output would contain all of this information in a structured format, making it easy to parse and analyze programmatically.
