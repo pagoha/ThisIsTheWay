@@ -203,7 +203,7 @@ Requirements
 - The following IAM permissions:
 -- Read-only permissions for each service being scanned
 -- sts:GetCallerIdentity permission
-
+```
 ## 📝 IAM Permissions
 The scanner requires read-only permissions for the services it's checking. A sample IAM policy is provided below:
 ```
