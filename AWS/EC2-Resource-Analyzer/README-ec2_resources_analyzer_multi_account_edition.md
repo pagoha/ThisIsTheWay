@@ -132,4 +132,4 @@ Contributions are welcome!
 
 ## 👨‍💻 Author
 
-Created by [pagoha]
+Made with ❤️ by [pagoha]
