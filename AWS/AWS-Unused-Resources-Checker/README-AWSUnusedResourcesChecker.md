@@ -73,6 +73,42 @@ Install required dependencies:
 pip install boto3
 ```
 
+## 📝 IAM Permissions
+The scanner requires read-only permissions for the services it's checking. A sample IAM policy is provided below:
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:Describe*",
+                "s3:ListBucket*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "rds:Describe*",
+                "elasticache:Describe*",
+                "dynamodb:List*",
+                "dynamodb:Describe*",
+                "iam:List*",
+                "iam:Get*",
+                "lambda:List*",
+                "lambda:Get*",
+                "ecs:List*",
+                "ecs:Describe*",
+                "elb:Describe*",
+                "elasticbeanstalk:Describe*",
+                "cloudwatch:GetMetric*",
+                "cloudformation:ListStacks",
+                "cloudformation:DescribeStacks",
+                "sts:GetCallerIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 ## 🚀 Usage
 When you run the AWSUnusedResourcesChecker.py script, here's the step-by-step flow and the prompts you'll encounter:
 
@@ -209,42 +245,6 @@ Idle DynamoDB Tables:
    - Consider using AWS Cost Explorer to identify additional savings
 ```  
 
-
-## 📝 IAM Permissions
-The scanner requires read-only permissions for the services it's checking. A sample IAM policy is provided below:
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:Describe*",
-                "s3:ListBucket*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "rds:Describe*",
-                "elasticache:Describe*",
-                "dynamodb:List*",
-                "dynamodb:Describe*",
-                "iam:List*",
-                "iam:Get*",
-                "lambda:List*",
-                "lambda:Get*",
-                "ecs:List*",
-                "ecs:Describe*",
-                "elb:Describe*",
-                "elasticbeanstalk:Describe*",
-                "cloudwatch:GetMetric*",
-                "cloudformation:ListStacks",
-                "cloudformation:DescribeStacks",
-                "sts:GetCallerIdentity"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-```
 ## 🔒 Security Notes
 - This tool only performs read-only operations on your AWS account
 - No modifications are made to any resources
