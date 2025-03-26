@@ -126,22 +126,13 @@ def get_ec2_details(account, region):
             
             # Extract the EC2 Name from tags
             instance_name = 'N/A'
-            formatted_tags = []
             
-            for tag in instance.get('Tags', []):
-                # Format each tag with spacing
-                formatted_tags.append(f"{tag['Key']}: {tag['Value']}")
-                
-                # Find the Name tag
-                if tag['Key'].lower() == 'name':
-                    instance_name = tag['Value']
-            
+            # Initialize basic instance info
             instance_info = {
                 'Account': account['name'],
                 'Account ID': account.get('account_id', 'Unknown'),
                 'Region': region,
                 'Instance ID': instance_id,
-                'Name': instance_name,  # Added Name field
                 'State': instance['State']['Name'],
                 'Instance Type': instance['InstanceType'],
                 'Public IP': instance.get('PublicIpAddress', 'N/A'),
@@ -149,8 +140,21 @@ def get_ec2_details(account, region):
                 'Launch Time': instance['LaunchTime'],
                 'VPC ID': instance.get('VpcId', 'N/A'),
                 'Subnet ID': instance.get('SubnetId', 'N/A'),
-                'Tags': ' | '.join(formatted_tags),  # Formatted tags with spacing
             }
+            
+            # Process tags - add each tag as a separate column
+            for tag in instance.get('Tags', []):
+                if tag['Key'].lower() == 'name':
+                    instance_name = tag['Value']
+                    instance_info['Name'] = tag['Value']
+                
+                # Add each tag as a column
+                tag_column_name = f"Tag_{tag['Key']}"
+                instance_info[tag_column_name] = tag['Value']
+            
+            # If name wasn't found in tags, add it explicitly
+            if 'Name' not in instance_info:
+                instance_info['Name'] = instance_name
 
             # Get AMI information
             if 'ImageId' in instance:
@@ -254,8 +258,9 @@ def export_to_csv(all_data):
     # Reorder columns to put important ones first, then the rest in their original order
     if not df.empty:
         first_columns = [col for col in columns_order if col in df.columns]
-        other_columns = [col for col in df.columns if col not in columns_order]
-        df = df[first_columns + other_columns]
+        tag_columns = sorted([col for col in df.columns if col.startswith('Tag_')])
+        other_columns = [col for col in df.columns if col not in columns_order and not col.startswith('Tag_')]
+        df = df[first_columns + tag_columns + other_columns]
     
     df.to_csv(filename, index=False)
     print(f"\nEC2 instance details from all accounts exported to {filename}")
