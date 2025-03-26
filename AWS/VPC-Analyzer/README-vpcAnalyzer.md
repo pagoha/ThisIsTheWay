@@ -63,7 +63,7 @@ The script generates two files:
 
 Both files are named with the AWS account ID and a timestamp for easy identification and versioning.
 
-## Sample Output
+## Sample Output of AWS VPC Info Report
 ```
 ================================================================================
                         AWS VPC INFORMATION REPORT
