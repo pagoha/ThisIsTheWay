@@ -2,7 +2,7 @@
 
 ## 📝 Description
 
-vpcAnalyzer.py is a comprehensive Python script designed to provide detailed information about AWS VPC (Virtual Private Cloud) environments and their associated networking components. This tool is invaluable for AWS administrators, DevOps engineers, and cloud architects who need to audit, document, or troubleshoot their AWS network infrastructure.
+[vpcAnalyzer.py] is a comprehensive Python script designed to provide detailed information about AWS VPC (Virtual Private Cloud) environments and their associated networking components. This tool is invaluable for AWS administrators, DevOps engineers, and cloud architects who need to audit, document, or troubleshoot their AWS network infrastructure.
 
 ## ✨ Features
 
