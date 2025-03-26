@@ -100,13 +100,26 @@ EC2 instance details from all accounts exported to ec2_resources_analyzer_multi_
 
 ## 📊 Output Format
 
-The script generates a detailed CSV file containing all EC2 instance information across selected accounts and regions. Here's a sample of what the report contains:
+Below is a sample output from the AWS EC2 Resources Analyzer - Multi-Account Edition script (showing key columns for readability):
 
-| Account | Account ID | Region | Instance ID | Name | State | Instance Type | Public IP | Private IP | Launch Time | VPC ID | Subnet ID | AMI ID | AMI Name | Security Groups | EBS Volumes | Associated Snapshots | Elastic IPs | Network Interfaces | Associated Backups | Load Balancer Targets | CloudWatch Alarms | Tags |
-|---------|------------|--------|------------|------|-------|--------------|-----------|------------|-------------|--------|-----------|--------|----------|-----------------|-------------|---------------------|-------------|-------------------|-------------------|----------------------|-------------------|------|
-| production (123456789012) | 123456789012 | us-east-1 | i-0a1b2c3d4e5f6g7h8 | web-server-01 | running | t3.medium | 54.123.45.67 | 10.0.1.15 | 2024-11-05 15:30:22+00:00 | vpc-12345678 | subnet-abcdef12 | ami-0abc12345def | amzn2-ami-hvm-2.0.20240301.0-x86_64 | sg-0a1b2c3d (web-servers) | vol-0a1b2c3d (100 GB, gp3) | snap-0a1b2c3d (Volume: vol-0a1b2c3d, 2025-03-18 08:15:00+00:00) | 54.123.45.67 (eipalloc-0a1b2c3d) | eni-0a1b2c3d (10.0.1.15) | No backups | prod-web-tg (arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/prod-web-tg/abcdef1234567890) | CPUAlarmHigh, StatusCheckFailed | Name: web-server-01 &#124; Environment: prod &#124; Service: web |
-| production (123456789012) | 123456789012 | us-east-1 | i-1a2b3c4d5e6f7g8h9 | db-server-01 | running | r5.large | N/A | 10.0.2.25 | 2024-10-12 03:45:11+00:00 | vpc-12345678 | subnet-12345def | ami-0def45678abc | amzn2-ami-hvm-2.0.20240301.0-x86_64 | sg-1a2b3c4d (db-servers) | vol-1a2b3c4d (500 GB, io2) | snap-1a2b3c4d (Volume: vol-1a2b3c4d, 2025-03-21 02:00:00+00:00) | N/A | eni-1a2b3c4d (10.0.2.25) | arn:aws:backup:us-east-1:123456789012:recovery-point:abcdef (2025-03-21T02:00:00Z) | N/A | DBHighMemoryUsage, DBHighCPU | Name: db-server-01 &#124; Environment: prod &#124; Service: database &#124; BackupSchedule: daily |
-| testing (210987654321) | 210987654321 | eu-west-1 | i-2a3b4c5d6e7f8g9h0 | test-api-server | running | t3.large | 18.45.67.89 | 172.16.1.45 | 2025-02-18 09:12:33+00:00 | vpc-87654321 | subnet-21fedcba | ami-9876abcd | ubuntu-focal-20.04-amd64-server | sg-2a3b4c5d (api-servers) | vol-2a3b4c5d (80 GB, gp2) | No snapshots | 18.45.67.89 (eipalloc-2a3b4c5d) | eni-2a3b4c5d (172.16.1.45) | No backups | test-api-tg (arn:aws:elasticloadbalancing:eu-west-1:210987654321:targetgroup/test-api-tg/0987654321abcdef) | No alarms | Name: test-api-server &#124; Environment: test &#124; Owner: DevTeam |
+| Account | Account ID | Region | Instance ID | Name | State | Instance Type | Tag_Environment | Tag_Owner | Tag_Project |
+|---------|------------|--------|------------|------|-------|---------------|----------------|-----------|------------|
+| dev (123456789012) | 123456789012 | us-east-1 | i-0abc123def456789 | web-server-01 | running | t3.medium | production | devops-team | website |
+| dev (123456789012) | 123456789012 | us-east-1 | i-1def456ghi789012 | db-server-01 | running | r5.large | production | db-team | database |
+| prod (987654321098) | 987654321098 | us-west-2 | i-9xyz876wvu54321 | api-server-03 | stopped | c5.xlarge | staging | dev-team | api |
+| prod (987654321098) | 987654321098 | us-west-2 | i-3abc456def789012 | cache-01 | running | r6g.xlarge | production | infra-team | cache |
+
+## Complete Data Export
+
+The actual CSV export includes many more columns with detailed information about each instance:
+
+- Basic instance details (ID, type, state, etc.)
+- Individual columns for each tag (Tag_Name, Tag_Environment, Tag_Project, etc.)
+- AMI information (ID, name)
+- Networking details (IPs, VPC, subnet, security groups)
+- Storage information (EBS volumes and snapshots)
+- Associated resources (Elastic IPs, load balancer targets)
+- Monitoring and backup data (CloudWatch alarms, AWS Backup recovery points)
 
 ## 🎯 Use Cases
 
