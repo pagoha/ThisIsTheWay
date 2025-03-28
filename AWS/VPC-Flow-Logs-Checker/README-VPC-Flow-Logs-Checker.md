@@ -1,34 +1,34 @@
-# VPC Flow Logs Checker
+# VPC Flow Logs Checker 🔍
 
 This Python script (`vpcFlowLogsChecker.py`) performs a comprehensive VPC analysis across AWS accounts. It lists all VPCs and checks their Flow Logs status (ACTIVE, INACTIVE, or NOT CONFIGURED), providing detailed information on each VPC and its associated Flow Logs configuration.
 
-## Features
+## ✨ Features
 
-### AWS Credentials/Profile Selection:
+### 🔐 AWS Credentials/Profile Selection:
 - Lists all available AWS profiles
 - Allows selection by number or name
 - Uses default profile if none selected
 
-### Account Confirmation:
+### ✅ Account Confirmation:
 - Shows account ID and IAM ARN before proceeding
 - Requires explicit confirmation to continue
 
-### VPC Analysis:
+### 🔍 VPC Analysis:
 - Lists all VPCs in the account
 - Checks for VPC Flow Logs status (ACTIVE, INACTIVE, NOT CONFIGURED)
 - Shows detailed information about each VPC and its Flow Logs
 
-### Comprehensive Reporting:
+### 📊 Comprehensive Reporting:
 - Displays a formatted terminal report
 - Provides summary statistics
 - Includes recommendations based on findings
 - Exports both text and CSV reports with timestamps and account ID
 
-### Error Handling:
+### ⚠️ Error Handling:
 - Comprehensive error handling throughout
 - Graceful handling of keyboard interrupts
 
-## Requirements
+## 📋 Requirements
 
 - Python 3.6+
 - Required packages:
@@ -38,13 +38,47 @@ This Python script (`vpcFlowLogsChecker.py`) performs a comprehensive VPC analys
   - tabulate
 - AWS CLI configured with at least one profile
 
-## Installation
+## 🚀 Installation
 
 Install the required Python packages:
 
 ```bash
 pip install boto3 botocore pandas tabulate
 ```
+
+## 📝 Usage
+
+Simply download then run the script from the command line:
+
+```bash
+./vpcFlowLogsChecker.py
+```
+or
+```bash
+python3 vpcFlowLogsChecker.py
+```
+
+Make sure to change directory to where you downloaded the file before running the script.
+
+## 🔄 How It Works
+
+1. The script lists available AWS profiles from your AWS credentials
+2. You select the profile to use (or it uses the only available one)
+3. It displays and asks you to confirm the AWS account information
+4. The script:
+   - Retrieves all VPCs in the selected account
+   - Checks flow log configuration for each VPC
+   - Generates a detailed report with the status of each VPC
+   - Provides summary statistics and recommendations
+   - Saves results to both text and CSV files for further analysis
+
+## 📂 Output Files
+
+The script generates two output files with a timestamp and account ID in the filename:
+- `vpc_flow_logs_status_ACCOUNT-ID_TIMESTAMP.txt`: A formatted text report
+- `vpc_flow_logs_status_ACCOUNT-ID_TIMESTAMP.csv`: Raw data in CSV format for further processing
+
+## 📺 Example Output
 
 Below is an example of the Terminal Output during execution:
 ```
@@ -113,3 +147,7 @@ RECOMMENDATIONS:
 Detailed text report saved to: vpc_flow_logs_status_123456789012_20250321_131915.txt
 CSV data saved to: vpc_flow_logs_status_123456789012_20250321_131915.csv
 ```
+
+---
+
+Made with ❤️ by [pagoha]
