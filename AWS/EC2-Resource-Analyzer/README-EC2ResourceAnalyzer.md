@@ -79,3 +79,5 @@ Amazon CloudWatch
 
 ## 🛡️ Security Note
 Ensure your AWS credentials have appropriate read-only permissions to the required services.
+
+Made with ❤️ by [pagoha]
