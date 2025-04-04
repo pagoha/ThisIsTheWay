@@ -137,12 +137,12 @@ The actual CSV export includes many more columns with detailed information about
 
 ## 📄 License
 
-[MIT License](LICENSE)
+MIT License
 
 ## 👥 Contributing
 
 Contributions are welcome!
 
-## 👨‍💻 Author
+
 
 Made with ❤️ by [pagoha]
