@@ -257,13 +257,13 @@ Idle DynamoDB Tables:
 - Environment Cleanup: Maintain a clean, well-organized environment by removing unused resources
 - Resource Management: Better understand and optimize your AWS infrastructure
 
+## ⚠️ Disclaimer
+Always review the resources identified before deletion, as some might be intentionally kept in an "unused" state for valid business reasons.
+
 ## 🛠️ Contributing
 Contributions are welcome!
 
 ## 📄 License
 MIT License
-
-## ⚠️ Disclaimer
-Always review the resources identified before deletion, as some might be intentionally kept in an "unused" state for valid business reasons.
 
 Made with ❤️ by [pagoha]
