@@ -213,7 +213,6 @@ Sample IAM policy:
 - Very large AWS accounts may experience longer execution times
 - Some resource types might not be discoverable via the Tagging API
 
-## 📜 License
-This project is licensed under the MIT License
+
 
 Created with ❤️ by [pagoha]
