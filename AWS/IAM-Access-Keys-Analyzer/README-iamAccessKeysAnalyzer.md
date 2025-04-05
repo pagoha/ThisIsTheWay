@@ -1,7 +1,7 @@
 # AWS IAM Access Keys Analyzer 🔑
 
 [![Python](https://img.shields.io/badge/Python-3.6%2B-blue)](https://www.python.org/)
-[![AWS](https://img.shields.io/badge/AWS-boto3-orange)](https://aws.amazon.com/)
+[![AWS](https://img.shields.io/badge/AWS-boto3-orange)]([https://aws.amazon.com/](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html))
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 A Python tool that identifies unused and old AWS IAM access keys to help maintain AWS account security and compliance.
