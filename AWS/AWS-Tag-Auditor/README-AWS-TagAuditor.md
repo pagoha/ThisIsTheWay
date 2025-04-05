@@ -37,9 +37,10 @@ AWS Tag Auditor is a powerful Python utility that provides comprehensive analysi
    ```
    
 Install required dependencies:
-
-
+```
 pip install -r requirements.txt
+```
+
 Make the script executable:
 
 
