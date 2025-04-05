@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.6%2B-blue)](https://www.python.org/)
 [![AWS](https://img.shields.io/badge/AWS-boto3-orange)](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/license/mit)
 
 A Python tool that identifies unused and old AWS IAM access keys to help maintain AWS account security and compliance.
 
