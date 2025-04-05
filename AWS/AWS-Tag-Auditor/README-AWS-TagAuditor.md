@@ -114,7 +114,7 @@ CSV Export (tag_audit_[account-id]_[timestamp].csv):
 
 Text Report (tag_audit_report_[account-id]_[timestamp].txt):
 - Formatted summary of tag analysis
---Service and tag key statistics
+- Service and tag key statistics
 --Recommendations and best practices
 
 
