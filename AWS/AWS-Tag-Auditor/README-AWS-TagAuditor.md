@@ -42,9 +42,9 @@ pip install -r requirements.txt
 ```
 
 Make the script executable:
-
-
+```
 chmod +x aws_tag_auditor.py
+```
 
 ## 🛠️ Usage
 
