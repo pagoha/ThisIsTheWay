@@ -34,6 +34,8 @@ AWS Tag Auditor is a powerful Python utility that provides comprehensive analysi
    ```bash
    git clone https://github.com/yourusername/aws-tag-auditor.git
    cd aws-tag-auditor
+   ```
+   
 Install required dependencies:
 
 
