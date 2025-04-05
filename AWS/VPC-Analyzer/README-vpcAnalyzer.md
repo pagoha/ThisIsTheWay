@@ -1,4 +1,7 @@
 # 🌐 AWS VPC Analyzer
+[![AWS](https://img.shields.io/badge/AWS-boto3-orange)](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+[![Python](https://img.shields.io/badge/Python-3.6%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/license/mit)
 
 ## 📝 Description
 
