@@ -264,7 +264,7 @@ echo
 echo "${YELLOW}Use 'cat $REPORT_FILE' to view the full report${NORMAL}"
 ```
 
-3. Save the file by pressing Ctrl+O, then Enter, then Ctrl+X to exit the editor.
+3. Save the file by pressing Ctrl+O, then Enter, then Ctrl+X to exit the GNU nano editor.
 
 4. Make the script executable:
 
