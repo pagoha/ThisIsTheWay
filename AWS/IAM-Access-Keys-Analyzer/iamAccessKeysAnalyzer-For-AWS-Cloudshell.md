@@ -2,13 +2,13 @@
 This script identifies old and unused AWS access keys
 
 
-1. Log into an AWS account, launch CloudShell, and create the file:
+1. Log into an AWS account, launch CloudShell, and create the file using GNU nano:
 
 ```bash
 nano iamAccessKeysAnalyzer.sh
 ```
 
-2. Copy and paste the entire script below into the editor:
+2. Copy and paste the entire script below into the GNU nano editor:
 
 ```bash
 #!/bin/bash
