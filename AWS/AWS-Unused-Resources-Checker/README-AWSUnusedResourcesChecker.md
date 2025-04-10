@@ -74,7 +74,7 @@ pip install boto3
 ```
 
 ## 📝 IAM Permissions
-The scanner requires read-only permissions for the services it's checking. A sample IAM policy is provided below:
+The scanner requires AWS IAM read-only permissions for the services it's checking. A sample IAM policy is provided below:
 ```
 {
     "Version": "2012-10-17",
