@@ -110,7 +110,7 @@ The scanner requires AWS IAM read-only permissions for the services it's checkin
 ```
 
 ## 🚀 Usage
-When you run the AWSUnusedResourcesChecker.py script, here's the step-by-step flow and the prompts you'll encounter:
+When you run the AWSUnusedResourcesChecker.py script, here's the step-by-step process and the prompts you'll encounter:
 
 Script Launch: You start by running the script with either:
 ```
