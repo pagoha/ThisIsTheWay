@@ -63,11 +63,8 @@ Requirements
 -- sts:GetCallerIdentity permission
 ```
 
-Clone this repository:
-```bash
-git clone https://github.com/yourusername/aws-unused-resources-scanner.git
-cd aws-unused-resources-scanner
-```
+Clone this repository
+
 Install required dependencies:
 ```
 pip install boto3
