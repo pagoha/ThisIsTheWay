@@ -1,6 +1,6 @@
 # VPC Flow Logs Checker 🔍
 
-This Python script (`vpcFlowLogsChecker.py`) performs a comprehensive VPC analysis across AWS accounts. It lists all VPCs and checks their Flow Logs status (ACTIVE, INACTIVE, or NOT CONFIGURED), providing detailed information on each VPC and its associated Flow Logs configuration.
+This Python script [`vpcFlowLogsChecker.py`] performs a comprehensive VPC analysis across AWS accounts. It lists all VPCs and checks their Flow Logs status (ACTIVE, INACTIVE, or NOT CONFIGURED), providing detailed information on each VPC and its associated Flow Logs configuration.
 
 ## ✨ Features
 
