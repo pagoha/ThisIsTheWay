@@ -75,8 +75,8 @@ Make sure to change directory to where you downloaded the file before running th
 ## 📂 Output Files
 
 The script generates two output files with a timestamp and account ID in the filename:
-- `vpc_flow_logs_status_ACCOUNT-ID_TIMESTAMP.txt`: A formatted text report
-- `vpc_flow_logs_status_ACCOUNT-ID_TIMESTAMP.csv`: Raw data in CSV format for further processing
+- A formatted text report: `vpc_flow_logs_status_ACCOUNT-ID_TIMESTAMP.txt`
+- Raw data in CSV format for further processing: `vpc_flow_logs_status_ACCOUNT-ID_TIMESTAMP.csv`
 
 ## 📺 Example Output
 
