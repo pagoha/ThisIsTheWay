@@ -289,3 +289,4 @@ If the `dos2unix` command is not available, you can use:
 ```bash
 sed -i 's/\r$//' iamAccessKeysAnalyzer.sh
 ```
+Additional reference: `https://wiki.gentoo.org/wiki/Dos2unix`
