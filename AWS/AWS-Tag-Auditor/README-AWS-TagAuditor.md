@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-AWS Tag Auditor is a powerful Python utility that provides comprehensive analysis of resource tagging across your AWS environments. Proper tagging is essential for cost allocation, security governance, and operational management. 
+AWS Tag Auditor [`AWS-TagAuditor.py`] is a powerful Python utility that provides comprehensive analysis of resource tagging across your AWS environments. Proper tagging is essential for cost allocation, security governance, and operational management. 
 
 This tool helps you understand your current tagging status and identify areas for improvement.
 
