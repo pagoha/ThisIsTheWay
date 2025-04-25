@@ -34,10 +34,7 @@ This tool helps you understand your current tagging status and identify areas fo
 
 Clone the repository
    
-Install required dependencies:
-```
-pip install -r requirements.txt
-```
+Install required dependencies
 
 Make the script executable:
 ```
