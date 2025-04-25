@@ -46,7 +46,7 @@ chmod +x AWS-TagAuditor.py
 Simply run the script from your terminal:
 
 ```bash
-./aws_tag_auditor.py
+./AWS-TagAuditor.py
 ```
 The script will:
 
