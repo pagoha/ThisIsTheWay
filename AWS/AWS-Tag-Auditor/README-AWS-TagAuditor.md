@@ -32,11 +32,7 @@ This tool helps you understand your current tagging status and identify areas fo
 
 ### Setup
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/aws-tag-auditor.git
-   cd aws-tag-auditor
-   ```
+Clone the repository
    
 Install required dependencies:
 ```
