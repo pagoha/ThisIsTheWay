@@ -38,7 +38,7 @@ Install required dependencies
 
 Make the script executable:
 ```
-chmod +x aws_tag_auditor.py
+chmod +x AWS-TagAuditor.py
 ```
 
 ## 🛠️ Usage
