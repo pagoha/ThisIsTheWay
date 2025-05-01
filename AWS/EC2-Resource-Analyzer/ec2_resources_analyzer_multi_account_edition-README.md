@@ -12,7 +12,7 @@ A comprehensive tool to analyze EC2 instances across multiple AWS accounts and r
   - Network details (VPC, subnet, public/private IPs, security groups)
   - Storage information (EBS volumes and snapshots)
   - AMI details
-  - Instance tags
+  - Instance tags with a focus on individual columns for each tag (Tag_Name, Tag_Environment, Tag_Project, etc.)
   - Network interfaces
   - Elastic IPs
   - Load balancer associations
