@@ -1821,49 +1821,49 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                 </div>
                 <ul class="nav-menu">
                     <li class="nav-item">
-                        <a class="nav-link active" onclick="showTab('dashboard')">
+                        <a class="nav-link active" data-tab="dashboard">
                             <i class="fas fa-tachometer-alt"></i>
                             Executive Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('findings')">
+                        <a class="nav-link" data-tab="findings">
                             <i class="fas fa-search"></i>
                             Findings Explorer
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('analytics')">
+                        <a class="nav-link" data-tab="analytics">
                             <i class="fas fa-chart-line"></i>
                             Advanced Analytics
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('compliance')">
+                        <a class="nav-link" data-tab="compliance">
                             <i class="fas fa-clipboard-check"></i>
                             Compliance View
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('remediation')">
+                        <a class="nav-link" data-tab="remediation">
                             <i class="fas fa-tools"></i>
                             Remediation Center
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('resources')">
+                        <a class="nav-link" data-tab="resources">
                             <i class="fas fa-server"></i>
                             Resource Inventory
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('trends')">
+                        <a class="nav-link" data-tab="trends">
                             <i class="fas fa-trending-up"></i>
                             Trend Analysis
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" onclick="showTab('reports')">
+                        <a class="nav-link" data-tab="reports">
                             <i class="fas fa-file-alt"></i>
                             Reports & Export
                         </a>
@@ -2433,12 +2433,40 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
             const itemsPerPage = 25;
             let sortColumn = 0;
             let sortDirection = 'desc';
+            
+            // Chart instances storage
+            let chartInstances = {{}};
+
+            function cleanupCharts() {{
+                try {{
+                    // Destroy existing chart instances
+                    Object.keys(chartInstances).forEach(chartId => {{
+                        if (chartInstances[chartId]) {{
+                            chartInstances[chartId].destroy();
+                            delete chartInstances[chartId];
+                        }}
+                    }});
+                }} catch (error) {{
+                    console.warn('Chart cleanup error:', error);
+                }}
+            }}
 
             // Initialize the application
             document.addEventListener('DOMContentLoaded', function() {{
                 initializeCharts();
                 renderFindingsTable();
                 loadTheme();
+                
+                // Add navigation event listeners
+                document.querySelectorAll('.nav-link').forEach(link => {{
+                    link.addEventListener('click', function(e) {{
+                        e.preventDefault();
+                        const tabName = this.getAttribute('data-tab');
+                        if (tabName) {{
+                            showTab(tabName, this);
+                        }}
+                    }});
+                }});
             }});
 
             // Theme management
@@ -2467,35 +2495,77 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
             }}
 
             // Navigation management
-            function showTab(tabName) {{
-                // Hide all tabs
-                const tabs = document.querySelectorAll('.tab-content');
-                tabs.forEach(tab => tab.classList.remove('active'));
-                
-                // Show selected tab
-                document.getElementById(tabName).classList.add('active');
-                
-                // Update navigation
-                const navLinks = document.querySelectorAll('.nav-link');
-                navLinks.forEach(link => link.classList.remove('active'));
-                event.target.classList.add('active');
-                
-                // Update page title
-                const titles = {{
-                    'dashboard': 'Executive Dashboard',
-                    'findings': 'Findings Explorer',
-                    'analytics': 'Advanced Analytics',
-                    'compliance': 'Compliance View',
-                    'remediation': 'Remediation Center',
-                    'resources': 'Resource Inventory',
-                    'trends': 'Trend Analysis',
-                    'reports': 'Reports & Export'
-                }};
-                
-                document.getElementById('pageTitle').textContent = titles[tabName] || 'Security Hub Portal';
-                
-                // Refresh charts when switching tabs
-                setTimeout(initializeCharts, 100);
+            function showTab(tabName, clickedElement = null) {{
+                try {{
+                    // Hide all tabs
+                    const tabs = document.querySelectorAll('.tab-content');
+                    tabs.forEach(tab => {{
+                        if (tab) {{
+                            tab.classList.remove('active');
+                        }}
+                    }});
+                    
+                    // Show selected tab
+                    const targetTab = document.getElementById(tabName);
+                    if (targetTab) {{
+                        targetTab.classList.add('active');
+                    }} else {{
+                        console.warn(`Tab with id '${{tabName}}' not found`);
+                        return;
+                    }}
+                    
+                    // Update navigation
+                    const navLinks = document.querySelectorAll('.nav-link');
+                    navLinks.forEach(link => {{
+                        if (link) {{
+                            link.classList.remove('active');
+                        }}
+                    }});
+                    
+                    // Add active class to clicked element
+                    if (clickedElement) {{
+                        clickedElement.classList.add('active');
+                    }} else {{
+                        // Fallback: find the nav link by data-tab attribute
+                        const activeNavLink = document.querySelector(`[data-tab="${{tabName}}"]`);
+                        if (activeNavLink) {{
+                            activeNavLink.classList.add('active');
+                        }}
+                    }}
+                    
+                    // Update page title
+                    const titles = {{
+                        'dashboard': 'Executive Dashboard',
+                        'findings': 'Findings Explorer',
+                        'analytics': 'Advanced Analytics',
+                        'compliance': 'Compliance View',
+                        'remediation': 'Remediation Center',
+                        'resources': 'Resource Inventory',
+                        'trends': 'Trend Analysis',
+                        'reports': 'Reports & Export'
+                    }};
+                    
+                    const pageTitle = document.getElementById('pageTitle');
+                    if (pageTitle) {{
+                        pageTitle.textContent = titles[tabName] || 'Security Hub Portal';
+                    }}
+                    
+                    // Cleanup existing charts before reinitializing
+                    cleanupCharts();
+                    
+                    // Refresh charts when switching tabs (with delay for DOM update)
+                    setTimeout(() => {{
+                        try {{
+                            initializeCharts();
+                        }} catch (chartError) {{
+                            console.warn('Chart initialization error:', chartError);
+                        }}
+                    }}, 100);
+                    
+                }} catch (error) {{
+                    console.error('Error in showTab:', error);
+                    showNotification('Error switching tabs. Please refresh the page.', 'error');
+                }}
             }}
 
             function toggleSidebar() {{
@@ -2523,7 +2593,12 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                 // Severity Distribution Chart
                 const severityCtx = document.getElementById('severityChart');
                 if (severityCtx) {{
-                    new Chart(severityCtx, {{
+                    // Cleanup existing chart first
+                    if (chartInstances["severityChart"]) {{
+                        chartInstances["severityChart"].destroy();
+                    }}
+
+                    chartInstances["severityChart"] = new Chart(severityCtx, {{
                         type: 'doughnut',
                         data: {{
                             labels: Object.keys(severityBreakdown),
@@ -2571,7 +2646,12 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                 // Risk Trends Chart
                 const trendsCtx = document.getElementById('trendsChart');
                 if (trendsCtx) {{
-                    new Chart(trendsCtx, {{
+                    // Cleanup existing chart first
+                    if (chartInstances["trendsChart"]) {{
+                        chartInstances["trendsChart"].destroy();
+                    }}
+
+                    chartInstances["trendsChart"] = new Chart(trendsCtx, {{
                         type: 'line',
                         data: {{
                             labels: riskTrends.map(d => d.date),
@@ -2653,7 +2733,12 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                         .sort((a, b) => b[1].total - a[1].total)
                         .slice(0, 10);
                     
-                    new Chart(resourceCtx, {{
+                    // Cleanup existing chart first
+                    if (chartInstances["resourceChart"]) {{
+                        chartInstances["resourceChart"].destroy();
+                    }}
+
+                    chartInstances["resourceChart"] = new Chart(resourceCtx, {{
                         type: 'bar',
                         data: {{
                             labels: resourceData.map(([type]) => type.replace('AWS::', '')),
@@ -2702,7 +2787,12 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                 // Compliance Standards Chart
                 const complianceCtx = document.getElementById('complianceChart');
                 if (complianceCtx) {{
-                    new Chart(complianceCtx, {{
+                    // Cleanup existing chart first
+                    if (chartInstances["complianceChart"]) {{
+                        chartInstances["complianceChart"].destroy();
+                    }}
+
+                    chartInstances["complianceChart"] = new Chart(complianceCtx, {{
                         type: 'pie',
                         data: {{
                             labels: Object.keys(complianceBreakdown),
@@ -2739,7 +2829,12 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                 // Security Trends Chart
                 const securityTrendsCtx = document.getElementById('securityTrendsChart');
                 if (securityTrendsCtx) {{
-                    new Chart(securityTrendsCtx, {{
+                    // Cleanup existing chart first
+                    if (chartInstances["securityTrendsChart"]) {{
+                        chartInstances["securityTrendsChart"].destroy();
+                    }}
+
+                    chartInstances["securityTrendsChart"] = new Chart(securityTrendsCtx, {{
                         type: 'line',
                         data: {{
                             labels: riskTrends.map(d => new Date(d.date).toLocaleDateString()),
@@ -2797,7 +2892,12 @@ def generate_comprehensive_html_report(findings, output_file, account_names):
                         .sort((a, b) => b[1].total - a[1].total)
                         .slice(0, 8);
                     
-                    new Chart(resourceSecurityCtx, {{
+                    // Cleanup existing chart first
+                    if (chartInstances["resourceSecurityChart"]) {{
+                        chartInstances["resourceSecurityChart"].destroy();
+                    }}
+
+                    chartInstances["resourceSecurityChart"] = new Chart(resourceSecurityCtx, {{
                         type: 'bar',
                         data: {{
                             labels: resourceSecurityData.map(([type]) => type.replace('AWS::', '')),
