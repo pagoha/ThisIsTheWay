@@ -192,7 +192,4 @@ Solution: If you're using a role with restricted permissions, ensure it has acce
 ## 📄 License
 MIT License
 
-## 👥 Contributing
-Contributions are welcome!
-
 Made with ❤️ by [pagoha]
