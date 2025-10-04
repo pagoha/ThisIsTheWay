@@ -1,9 +1,3 @@
-To use, first edit the file by inserting your AWS config profile, then run script in your PowerShell terminal by copying and pasting the whole script.
-
-This script will output a text file showing a list of your EC2 instances, their names (if available), and their tags, with proper separation between instances for easy readablility. 
-
-The output file will also show the total number of instances and region at bottom of the file.
-
 # EC2 Instances Tags Report Generator
 
 A PowerShell script that generates comprehensive CSV reports of EC2 instances across multiple AWS profiles and regions, including detailed tag information and instance metadata.
@@ -26,20 +20,37 @@ A PowerShell script that generates comprehensive CSV reports of EC2 instances ac
 
 ## Configuration
 
-Edit the script to specify your AWS profiles and regions:
+**Step 1:** Check your available AWS profiles by running:
+```powershell
+aws configure list-profiles
+```
+
+**Step 2:** Edit the script to specify your AWS profiles and regions BEFORE running:
 
 ```powershell
-$profilesToScan = @("production", "staging", "development")  # Your AWS profiles
-$regionsToScan = @("us-east-1", "us-west-2", "eu-west-1")   # Your target regions
+$profilesToScan = @("PROFILE1", "PROFILE2", "PROFILE3")  # Replace with your actual AWS profile names
+$regionsToScan = @("us-east-1", "us-west-2", "eu-west-1")   # Replace with your target regions
 ```
+
+**IMPORTANT:** You must edit the script to replace `PROFILE1`, `PROFILE2`, `PROFILE3` with your actual AWS profile names and specify your desired regions BEFORE running.
 
 ## Usage
 
-1. Clone or download the script
-2. Update the `$profilesToScan` and `$regionsToScan` arrays
-3. Run the script in PowerShell:
+**Option 1: Copy and Paste (Quick Start)**
+1. Run `aws configure list-profiles` to see your available profiles
+2. Copy the entire script code
+3. **Edit the `$profilesToScan` and `$regionsToScan` arrays** with your actual profile names and regions
+4. Open PowerShell
+5. Paste the modified code directly into the PowerShell session
+6. Press Enter to execute
+
+**Option 2: Save as File**
+1. Run `aws configure list-profiles` to see your available profiles
+2. Save the script as `EC2-Tags-Report.ps1`
+3. **Edit the `$profilesToScan` and `$regionsToScan` arrays** with your actual profile names and regions
+4. Run the script in PowerShell:
    ```powershell
-   .\ec2-tags-report.ps1
+   .\EC2-Tags-Report.ps1
    ```
 
 ## Output
@@ -51,7 +62,7 @@ The script generates two files:
 ### Sample CSV Output
 ```csv
 "AWS Profile","Region","Instance ID","Instance Name","State","Instance Type","Launch Time","Environment","Owner","Cost Center","Tag: Application"
-"production","us-east-1","i-0123456789abcdef0","WebServer-Prod","running","t3.medium","2024-01-15T10:30:00.000Z","Production","DevOps-Team","CC-12345","WebApp"
+"PROFILE1","us-east-1","i-0123456789abcdef0","WebServer-Prod","running","t3.medium","2024-01-15T10:30:00.000Z","Production","DevOps-Team","CC-12345","WebApp"
 ```
 
 ## CSV Columns
@@ -74,6 +85,5 @@ The script generates two files:
 - **Capacity Planning** - Analyze instance types and distribution
 - **Multi-Account Governance** - Centralized reporting for multiple AWS accounts
 
-## License
 
-MIT License - Feel free to modify and distribute as needed.
+Made with ❤️ by pagoha
