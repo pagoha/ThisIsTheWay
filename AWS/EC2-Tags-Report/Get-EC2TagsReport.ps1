@@ -13,7 +13,7 @@ $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $fileName = "EC2_Instances_Tags_Report_$timestamp.csv"
 
 # Define the profiles and regions you want to scan
-$profilesToScan = @("PROFLE1", "PROFILE2", "PROFILE3")  # Add your AWS profiles here
+$profilesToScan = @("PROFILE1", "PROFILE2", "PROFILE3")  # Add your AWS profiles here
 $regionsToScan = @("us-east-1", "us-west-2")  # Add your desired regions here
 
 $instanceData = @()
