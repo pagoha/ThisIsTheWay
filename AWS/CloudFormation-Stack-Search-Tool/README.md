@@ -26,11 +26,6 @@ A powerful Python tool to search for CloudFormation stacks and StackSets across 
 ### Setup
 
 1. Clone or download the script:
-```bash
-wget https://raw.githubusercontent.com/your-repo/cloudformation_stack_search.py
-# or
-curl -O https://raw.githubusercontent.com/your-repo/cloudformation_stack_search.py
-```
 
 2. Install required dependencies:
 ```bash
