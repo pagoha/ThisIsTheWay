@@ -1,4 +1,4 @@
-# 🚀 AWS EC2 Resources Analyzer - Multi-Account Edition
+# 🚀 AWS EC2 Resource Analyzer - Multi-Account Edition
 
 A comprehensive tool to analyze EC2 instances across multiple AWS accounts and regions. This script provides a detailed inventory of your EC2 resources, including instance details, networking configuration, storage, security groups, load balancer associations, CloudWatch alarms, and more.
 
@@ -138,11 +138,6 @@ The actual CSV export includes many more columns with detailed information about
 ## 📄 License
 
 MIT License
-
-## 👥 Contributing
-
-Contributions are welcome!
-
 
 
 Made with ❤️ by [pagoha]
