@@ -1,4 +1,4 @@
-# EC2 Instances Tags Report Generator
+# Get-EC2TagsReport.ps1
 
 A PowerShell script that generates comprehensive CSV reports of EC2 instances across multiple AWS profiles and regions, including detailed tag information and instance metadata.
 
@@ -46,11 +46,11 @@ $regionsToScan = @("us-east-1", "us-west-2", "eu-west-1")   # Replace with your 
 
 **Option 2: Save as File**
 1. Run `aws configure list-profiles` to see your available profiles
-2. Save the script as `EC2-Tags-Report.ps1`
+2. Save the script as `Get-EC2TagsReport.ps1`
 3. **Edit the `$profilesToScan` and `$regionsToScan` arrays** with your actual profile names and regions
 4. Run the script in PowerShell:
    ```powershell
-   .\EC2-Tags-Report.ps1
+   .\Get-EC2TagsReport.ps1
    ```
 
 ## Output
@@ -84,6 +84,8 @@ The script generates two files:
 - **Compliance Reporting** - Track tagging compliance across your infrastructure
 - **Capacity Planning** - Analyze instance types and distribution
 - **Multi-Account Governance** - Centralized reporting for multiple AWS accounts
+
+
 
 
 Made with ❤️ by pagoha
