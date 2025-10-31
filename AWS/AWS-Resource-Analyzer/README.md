@@ -328,6 +328,6 @@ Ensure your AWS profiles have the following permissions:
 - **Migration Planning**: Inventory existing resources before cloud migrations
 - **Resource Cleanup**: Identify unused or orphaned resources
 
-## License
+---
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Made with ❤️ by [pagoha]
