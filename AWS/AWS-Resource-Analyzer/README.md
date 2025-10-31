@@ -1,6 +1,6 @@
 # AWS Resource Analyzer
 
-A comprehensive AWS resource inventory and analysis tool that discovers and catalogs AWS resources across multiple accounts and regions. Built for cloud infrastructure auditing, security assessments, cost optimization, and compliance reporting at enterprise scale.
+A comprehensive AWS resource inventory and analysis tool that discovers and catalogs AWS resources across multiple accounts and regions. Built for cloud infrastructure auditing, security assessments, cost optimization, AWS account offboarding, and compliance reporting at enterprise scale.
 
 ## Overview
 
