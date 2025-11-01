@@ -52,6 +52,8 @@ Key Features:
 - Weekly/monthly operational use for ongoing cost optimization
 
 
+Usage:
+
 1. Log into an AWS account, launch CloudShell, and create the file using GNU nano:
 
 ```bash
