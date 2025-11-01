@@ -513,3 +513,262 @@ chmod +x aws-resource-analyzer.sh
 ./aws-resource-analyzer.sh
 ```
 
+# Example Output & Resource Coverage
+
+## Sample Analysis Output
+
+Here's what you'll see when running the AWS Resource Analyzer:
+
+```bash
+🚀 AWS Resource Cost Optimizer
+=================================
+Account: 123456789012
+Region: us-east-1
+Output Directory: aws-analysis-20241101-143052
+JSON Details: aws-analysis-20241101-143052/json-details
+
+🔍 PHASE 1: HIGH-COST RESOURCE DISCOVERY
+=========================================
+
+🌐 NAT Gateways ($32-45/month each)
+Found 2 active NAT Gateway(s):
+  • nat-0123456789abcdef0 in subnet-0abc123 - available
+  • nat-0987654321fedcba0 in subnet-0def456 - available
+💰 Potential Monthly Savings: $70 (2 × $35)
+📋 Recommended Actions:
+   Action: DELETE (cannot be stopped)
+   Command: aws ec2 delete-nat-gateway --nat-gateway-id NAT_GATEWAY_ID
+⚠️  WARNING: Deletion loses configuration and IP address
+
+⚖️  Load Balancers ($16-25/month each)
+Found 3 Load Balancer(s):
+  • ALB/NLB: web-app-lb - active
+  • ALB/NLB: api-gateway-lb - active  
+  • Classic: legacy-app-clb - internet-facing
+💰 Potential Monthly Savings: $60 (3 × $20)
+📋 Recommended Actions:
+   Action: DELETE (cannot be stopped)
+   Command: aws elbv2 delete-load-balancer --load-balancer-arn LB_ARN
+⚠️  Check target groups before deletion
+
+🗄️  ElastiCache Clusters ($50-500+/month)
+Found 1 ElastiCache Cluster(s):
+  • Redis: prod-redis-cluster - available
+💰 Potential Monthly Savings: $100 (1 × $100)
+📋 Recommended Actions:
+   Action: DELETE (cannot be stopped)
+   Command: aws elasticache delete-replication-group --replication-group-id GROUP_ID
+⚠️  WARNING: All cached data will be lost
+
+🔍 PHASE 2: STOPPABLE RESOURCE DISCOVERY
+=======================================
+
+🖥️  Running EC2 Instances (Variable cost)
+Found 5 running instance(s):
+  • i-0123456789abcdef0 (t3.medium) - web-server-01
+  • i-0234567890abcdef1 (t3.medium) - web-server-02
+  • i-0345678901abcdef2 (r5.large) - database-server
+  • i-0456789012abcdef3 (t3.small) - bastion-host
+  • i-0567890123abcdef4 (t3.micro) - dev-environment
+📋 Recommended Actions:
+   Action: STOP (preserves configuration)
+   Command: aws ec2 stop-instances --instance-ids INSTANCE_ID
+✅ Safe operation - configuration fully preserved
+
+🗄️  Available RDS Instances (Variable cost)
+Found 2 available RDS instance(s):
+  • prod-mysql-db (db.r5.large) - mysql
+  • staging-postgres-db (db.t3.medium) - postgres
+📋 Recommended Actions:
+   Action: STOP (auto-restarts after 7 days)
+   Command: aws rds stop-db-instance --db-instance-identifier DB_NAME --db-snapshot-identifier snapshot-name
+⚠️  Limitation: Auto-restarts after 7 days
+✅ Safe operation - data and config preserved
+
+🔄 Auto Scaling Groups (Variable cost)
+Found 1 active Auto Scaling Group(s):
+  • web-servers-asg - Desired: 3, Running: 3
+📋 Recommended Actions:
+   Action: SCALE TO ZERO (preserves configuration)
+   Command: aws autoscaling update-auto-scaling-group --auto-scaling-group-name ASG_NAME --desired-capacity 0 --min-size 0
+✅ Safe operation - configuration preserved for restart
+
+🌐 Unattached Elastic IPs ($3.65/month each)
+Found 2 unattached Elastic IP(s):
+  • 54.123.45.67 (eipalloc-0123456789abcdef0)
+  • 52.87.65.43 (eipalloc-0234567890abcdef1)
+💰 Potential Monthly Savings: $8 (2 × $4)
+📋 Recommended Actions:
+   Action: RELEASE (loses IP address)
+   Command: aws ec2 release-address --allocation-id ALLOCATION_ID
+⚠️  WARNING: IP address will be lost and cannot be recovered
+
+🔍 PHASE 3: CLOUDFORMATION ANALYSIS
+==================================
+
+🏗️  Active CloudFormation Stacks
+Found 8 active CloudFormation stack(s):
+  • web-infrastructure-stack - CREATE_COMPLETE
+  • database-backup-stack - UPDATE_COMPLETE
+  • monitoring-stack - CREATE_COMPLETE
+  • security-groups-stack - CREATE_COMPLETE
+  • vpc-networking-stack - CREATE_COMPLETE
+  • [additional stacks...]
+
+📋 CloudFormation Best Practices:
+   • Use stack updates instead of direct resource changes
+   • Check for stack dependencies before modifications
+   • Monitor for UPDATE_IN_PROGRESS states before operations
+
+💰 PHASE 4: COST OPTIMIZATION SUMMARY
+====================================
+
+💵 TOTAL POTENTIAL MONTHLY SAVINGS: $238
+📅 ANNUAL SAVINGS POTENTIAL: $2,856
+
+🎯 RECOMMENDED ACTION PRIORITY:
+   1. IMMEDIATE: Release 2 unattached Elastic IPs ($8/month)
+   2. HIGH: Review 2 NAT Gateways for deletion ($70/month)
+   3. MEDIUM: Audit 3 Load Balancers for necessity ($60/month)
+   4. FLEXIBLE: Stop 5 EC2 instances during off-hours (Variable savings)
+   5. FLEXIBLE: Stop 2 RDS instances during off-hours (Variable savings)
+   6. EVALUATE: Review 1 ElastiCache clusters ($100/month)
+
+📊 PHASE 5: OPERATION SAFETY CHECKLIST
+=====================================
+
+✅ Pre-Operation Checklist:
+   [ ] Review CloudFormation dependencies in JSON files
+   [ ] Coordinate maintenance windows for production resources
+   [ ] Verify backup/snapshot recency for databases
+   [ ] Test operations in development environment first
+   [ ] Document rollback procedures
+   [ ] Monitor cost impact after changes
+
+📂 Generated Files and Structure:
+   📁 aws-analysis-20241101-143052/
+   ├── 📄 README.txt (analysis summary)
+   └── 📁 json-details/
+       ├── 📄 nat_gateways.json (1247 bytes)
+       ├── 📄 alb_nlb.json (3456 bytes)
+       ├── 📄 running_instances.json (8934 bytes)
+       ├── 📄 available_rds.json (2341 bytes)
+       ├── 📄 unattached_eips.json (445 bytes)
+       └── [additional resource files]
+
+🎉 Analysis Complete!
+💡 Explore JSON data: cat aws-analysis-20241101-143052/json-details/*.json | jq .
+💡 Read summary: cat aws-analysis-20241101-143052/README.txt
+```
+
+## Complete Resource Coverage
+
+### 🟢 **Resources That CAN Be Stopped/Paused** (Configuration Preserved)
+
+| Resource Type | Action | Monthly Cost Impact | Safety Level | Auto-Restart |
+|---------------|--------|-------------------|--------------|--------------|
+| **EC2 Instances** | Stop | Variable (high) | ✅ Very Safe | Manual only |
+| **RDS Instances** | Stop | Variable (high) | ✅ Safe | 7 days |
+| **Auto Scaling Groups** | Scale to 0 | Variable (medium) | ✅ Safe | Manual only |
+| **ECS Services** | Scale to 0 | Variable (medium) | ✅ Safe | Manual only |
+| **CloudWatch Alarms** | Disable actions | Low | ✅ Very Safe | Manual only |
+| **CloudTrail** | Stop logging | Low-Medium | ✅ Safe | Manual only |
+| **CloudFront** | Disable distribution | Variable | ⚠️ Moderate | Manual only |
+
+**Key Benefit**: These resources can be stopped/paused with **zero configuration loss** and easily restarted when needed.
+
+### 🟡 **Resources with LIMITED Stop Capabilities**
+
+| Resource Type | Limitation | Workaround | Cost Impact |
+|---------------|------------|------------|-------------|
+| **EKS Clusters** | Control plane always runs ($73/month) | Scale node groups to 0 | Partial savings |
+| **Lambda Functions** | No clean stop mechanism | Disable event sources | Variable |
+| **API Gateway** | No true pause | Throttle to 0 requests | Minimal |
+
+### 🔴 **Resources That CANNOT Be Stopped** (Require Deletion)
+
+#### **High-Cost Deletion Candidates**
+| Resource Type | Monthly Cost | Deletion Impact | Recommendation |
+|---------------|--------------|-----------------|----------------|
+| **NAT Gateways** | $32-45 each | Lose configuration, new IP | ✅ Delete if unused |
+| **Load Balancers** | $16-25 each | Lose SSL certs, target groups | ⚠️ Audit usage first |
+| **ElastiCache** | $50-500+ each | All cached data lost | ⚠️ Evaluate necessity |
+| **Unattached EIPs** | $3.65 each | Lose IP address | ✅ Release immediately |
+
+#### **Always-On Services** (Cannot be paused)
+- **VPCs, Subnets, Security Groups**: Core networking infrastructure
+- **S3 Buckets**: Always available storage
+- **DynamoDB Tables**: Managed database (consider On-Demand billing)
+- **CloudFormation Stacks**: Infrastructure definitions
+- **IAM Resources**: Security and access control
+- **Route 53**: DNS services
+
+## Cost Impact Examples
+
+### **Small Environment** (Startup/Development)
+```
+Typical Findings:
+- 2 Unattached EIPs: $8/month
+- 1 Unused Load Balancer: $20/month  
+- 3 EC2 instances (off-hours): $50/month savings
+Total Monthly Savings: ~$78
+Annual Impact: ~$936
+```
+
+### **Medium Environment** (SMB/Department)
+```
+Typical Findings:
+- 1 NAT Gateway: $35/month
+- 3 Load Balancers: $60/month
+- 5 Unattached EIPs: $20/month
+- 8 EC2 instances (optimization): $150/month
+Total Monthly Savings: ~$265
+Annual Impact: ~$3,180
+```
+
+### **Large Environment** (Enterprise)
+```
+Typical Findings:
+- 4 NAT Gateways: $140/month
+- 12 Load Balancers: $240/month
+- 2 ElastiCache clusters: $200/month
+- 25 EC2 instances (rightsizing): $400/month
+Total Monthly Savings: ~$980
+Annual Impact: ~$11,760
+```
+
+## Resource Discovery Details
+
+The analyzer discovers and analyzes:
+
+### **Compute & Container Resources**
+- EC2 instances (all states) with name tags and CloudFormation relationships
+- Auto Scaling Groups with capacity details and instance counts
+- ECS clusters and services with task counts
+- EKS clusters with node group information
+- Lambda functions with runtime and event source details
+
+### **Database & Caching**
+- RDS instances (all engine types) with size and status information
+- ElastiCache Redis and Memcached clusters with node details
+- DynamoDB tables with billing mode analysis
+
+### **Networking & Load Balancing**
+- VPCs, Subnets, and Security Groups with CIDR and rule analysis
+- NAT Gateways, Internet Gateways, and Route Tables
+- Application/Network Load Balancers and Classic Load Balancers with target analysis
+- Elastic IPs with attachment status
+
+### **Storage & Backup**
+- EBS volumes with attachment status and snapshot age analysis
+- S3 buckets with region and lifecycle information
+- EFS file systems with size and performance details
+
+### **Management & Security**
+- CloudFormation stacks with dependency mapping and drift detection
+- CloudWatch alarms, log groups with retention policies
+- CloudTrail configuration and logging status
+- IAM users, roles, and custom policies
+- KMS customer-managed keys
+
+This comprehensive coverage ensures you get complete visibility into your AWS infrastructure costs and optimization opportunities.
