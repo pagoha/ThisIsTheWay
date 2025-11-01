@@ -15,16 +15,16 @@ Scans and inventories 7 major categories of AWS resources:
 - Cost Optimization Targets: Unused and underutilized resources
 
 💰 Cost Optimization Analysis
-Calculates potential monthly and annual savings
-Identifies immediate cost reduction opportunities
-Prioritizes actions by cost impact and risk level
-Provides specific AWS CLI commands for cost-saving operations
+- Calculates potential monthly and annual savings
+- Identifies immediate cost reduction opportunities
+- Prioritizes actions by cost impact and risk level
+- Provides specific AWS CLI commands for cost-saving operations
 
 🛡️ Safety & Compliance Features
-CloudFormation Integration: Detects CF-managed resources to prevent configuration drift
-Operational Safety Checks: Pre-operation checklists and warnings
-Non-Destructive Analysis: Read-only discovery with clear action recommendations
-Gov Cloud Compatible: Works seamlessly in both commercial AWS and AWS GovCloud
+- CloudFormation Integration: Detects CF-managed resources to prevent configuration drift
+- Operational Safety Checks: Pre-operation checklists and warnings
+- Non-Destructive Analysis: Read-only discovery with clear action recommendations
+- Gov Cloud Compatible: Works seamlessly in both commercial AWS and AWS GovCloud
 
 Key Features
 
