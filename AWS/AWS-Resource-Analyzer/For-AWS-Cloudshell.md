@@ -2,6 +2,7 @@
 The AWS Resource Analyzer is a comprehensive shell script designed to discover, analyze, and provide cost optimization recommendations for AWS resources across your infrastructure. It's the CloudShell-compatible version of the original Python AWS Resource Analyzer, providing the same powerful analysis capabilities with enhanced portability and ease of use.
 
 What It Does
+
 🔍 Comprehensive Resource Discovery
 Scans and inventories 7 major categories of AWS resources:
 
@@ -30,15 +31,18 @@ Key Features
 Commercial AWS: All regions (us-east-1, us-west-2, eu-west-1, etc.)
 AWS GovCloud: Fully tested in us-gov-east-1 and us-gov-west-1
 CloudShell Optimized: No external dependencies beyond standard AWS CLI tools
+
 ✅ Intelligent Cost Analysis
 Real-time cost calculations based on current AWS pricing
 Risk-categorized recommendations (Immediate, High, Medium, Flexible)
 ROI-focused prioritization (highest savings with lowest risk first)
+
 ✅ Professional Output
 Color-coded terminal output for easy scanning
 Organized file structure with timestamped analysis reports
 Machine-readable JSON files for automation and integration
 Executive summary reports with key findings and recommendations
+
 ✅ Enterprise Ready
 CloudFormation awareness prevents accidental infrastructure drift
 Bulk operation capabilities with safety guards
