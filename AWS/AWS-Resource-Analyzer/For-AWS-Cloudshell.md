@@ -4,21 +4,13 @@ The AWS Resource Analyzer is a comprehensive shell script designed to discover, 
 What It Does
 
 🔍 Comprehensive Resource Discovery
-
 Scans and inventories 7 major categories of AWS resources:
-
 High-Cost Infrastructure: NAT Gateways, Load Balancers, ElastiCache clusters
-
 Compute Resources: EC2 instances (running/stopped), Auto Scaling Groups
-
 Database Services: RDS instances (all engine types)
-
 Network Resources: Unattached Elastic IPs, VPC components
-
 Storage Systems: EBS volumes, snapshots
-
 Management Tools: CloudFormation stacks with dependency analysis
-
 Cost Optimization Targets: Unused and underutilized resources
 
 💰 Cost Optimization Analysis
