@@ -499,7 +499,7 @@ echo -e "${CYAN}💡 Explore JSON data: cat ${OUTPUT_DIR}/*.json | jq .${NC}"
 echo -e "${CYAN}💡 Read summary: cat ${OUTPUT_BASE}/README.txt${NC}"
 ```
 
-3. After pasting the script content, save by hitting [{Ctrl+X}, then {Y}, then {Enter}].
+3. After pasting the script content, save by hitting [Ctrl+X], then [Y], then [Enter].
 
 4. Make the script executable:
 
