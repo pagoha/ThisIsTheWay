@@ -26,10 +26,11 @@ Non-Destructive Analysis: Read-only discovery with clear action recommendations
 Gov Cloud Compatible: Works seamlessly in both commercial AWS and AWS GovCloud
 
 Key Features
+
 ✅ Multi-Environment Support
-Commercial AWS: All regions (us-east-1, us-west-2, eu-west-1, etc.)
-AWS GovCloud: Fully tested in us-gov-east-1 and us-gov-west-1
-CloudShell Optimized: No external dependencies beyond standard AWS CLI tools
+- Commercial AWS: All regions (us-east-1, us-west-2, eu-west-1, etc.)
+- AWS GovCloud: Fully tested in us-gov-east-1 and us-gov-west-1
+- CloudShell Optimized: No external dependencies beyond standard AWS CLI tools
 
 ✅ Intelligent Cost Analysis
 Real-time cost calculations based on current AWS pricing
