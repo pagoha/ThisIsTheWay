@@ -1491,34 +1491,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ---
 
-## 🤝 Contributing
-
-Want to improve this tool? Contributions welcome!
-
-**Ways to contribute:**
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📖 Improve documentation
-- 🔧 Submit code improvements
-
-**How to contribute:**
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b my-feature`
-3. Make your changes
-4. Test thoroughly
-5. Commit: `git commit -m "Add my feature"`
-6. Push: `git push origin my-feature`
-7. Open a Pull Request
-
-**Code guidelines:**
-- Follow PEP 8 style
-- Add docstrings
-- Comment complex logic
-- Test before submitting
-
----
-
 ## 💬 Support & Community
 
 **Share your experience:**
