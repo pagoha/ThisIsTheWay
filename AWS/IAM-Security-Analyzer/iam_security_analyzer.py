@@ -16,12 +16,23 @@ from threading import Lock
 from datetime import datetime, timezone, timedelta
 from botocore.exceptions import ClientError
 
+# Try to import openpyxl for Excel support, fall back to CSV if not available
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    EXCEL_AVAILABLE = True
+except ImportError:
+    EXCEL_AVAILABLE = False
+    print("Warning: openpyxl not installed. Excel export will not be available.")
+    print("Install with: pip install openpyxl")
+
 # Default configuration
 DEFAULT_CONFIG = {
     'days_threshold': 200,
     'max_workers': 5,
     'retry_attempts': 3,
-    'output_formats': ['txt', 'csv'],
+    'output_formats': ['txt', 'excel'],  # Changed default to excel
     'exclude_patterns': [],
     'check_mfa': True,
     'analyze_policies': True,
@@ -77,16 +88,20 @@ class IAMSecurityAnalyzer:
         # Output formats
         print("\nOutput format options:")
         print("1. Text report only")
-        print("2. CSV files only") 
-        print("3. Both text and CSV (default)")
+        if EXCEL_AVAILABLE:
+            print("2. Excel workbook only (multiple tabs)")
+            print("3. Both text and Excel (default)")
+        else:
+            print("2. CSV files only")
+            print("3. Both text and CSV (default)")
         format_choice = input("Choose output format (1-3, default 3): ")
         
         if format_choice == '1':
             self.config['output_formats'] = ['txt']
         elif format_choice == '2':
-            self.config['output_formats'] = ['csv']
+            self.config['output_formats'] = ['excel' if EXCEL_AVAILABLE else 'csv']
         else:
-            self.config['output_formats'] = ['txt', 'csv']
+            self.config['output_formats'] = ['txt', 'excel' if EXCEL_AVAILABLE else 'csv']
         
         # Exclude patterns
         exclude_input = input("Enter exclude patterns for usernames/roles (comma-separated, optional): ")
@@ -725,7 +740,7 @@ class IAMSecurityAnalyzer:
                     output.append("")
                 
                 if len(old_unused_keys) > 20:
-                    output.append(f"... and {len(old_unused_keys) - 20} more (see CSV export for full list)")
+                    output.append(f"... and {len(old_unused_keys) - 20} more (see Excel export for full list)")
             
             # Old used keys
             output.append(f"\n🔑 Old Used Access Keys (Not Recently Active)")
@@ -747,7 +762,7 @@ class IAMSecurityAnalyzer:
                     output.append("")
                 
                 if len(old_used_keys) > 20:
-                    output.append(f"... and {len(old_used_keys) - 20} more (see CSV export for full list)")
+                    output.append(f"... and {len(old_used_keys) - 20} more (see Excel export for full list)")
         
         # INACTIVE USERS SECTION
         output.append(create_header("INACTIVE USERS ANALYSIS"))
@@ -782,7 +797,7 @@ class IAMSecurityAnalyzer:
                 output.append("")
             
             if len(inactive_users) > 15:
-                output.append(f"... and {len(inactive_users) - 15} more (see CSV export for full list)\n")
+                output.append(f"... and {len(inactive_users) - 15} more (see Excel export for full list)\n")
         else:
             output.append("✅ No inactive users found.")
         
@@ -810,7 +825,7 @@ class IAMSecurityAnalyzer:
                 output.append("")
             
             if len(inactive_roles) > 15:
-                output.append(f"... and {len(inactive_roles) - 15} more (see CSV export for full list)\n")
+                output.append(f"... and {len(inactive_roles) - 15} more (see Excel export for full list)\n")
         else:
             output.append("✅ No inactive roles found.")
         
@@ -928,8 +943,324 @@ class IAMSecurityAnalyzer:
         
         return output
     
+    def export_to_excel(self, results, filename_base, account_id, days_threshold):
+        """Export comprehensive results to a single Excel file with multiple tabs"""
+        if not EXCEL_AVAILABLE:
+            self.logger.warning("Excel export not available. Falling back to CSV.")
+            return self.export_to_csv(results, filename_base)
+        
+        excel_filename = f"{filename_base}.xlsx"
+        wb = Workbook()
+        
+        # Remove default sheet
+        if 'Sheet' in wb.sheetnames:
+            wb.remove(wb['Sheet'])
+        
+        # Define styles
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        warning_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+        success_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+        
+        border_style = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Helper function to style headers and auto-size columns
+        def style_worksheet(ws, headers):
+            # Style header row
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = border_style
+            
+            # Auto-size columns
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)  # Max width of 50
+                ws.column_dimensions[column].width = adjusted_width
+            
+            # Freeze header row
+            ws.freeze_panes = ws['A2']
+        
+        # TAB 1: Summary
+        ws_summary = wb.create_sheet("Summary")
+        summary_data = [
+            ["AWS IAM Security Analysis Summary"],
+            ["Account ID", account_id],
+            ["Generated", datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
+            ["Threshold (days)", days_threshold],
+            [""],
+            ["Category", "Count"],
+            ["Total Users", results['total_users']],
+            ["Active Users", len(results['active_users'])],
+            ["Inactive Users", len(results['inactive_users'])],
+            ["Total Roles", results['total_roles']],
+            ["Active Roles", len(results['active_roles'])],
+            ["Inactive Roles", len(results['inactive_roles'])],
+        ]
+        
+        if self.config['analyze_access_keys']:
+            summary_data.extend([
+                ["Old Unused Access Keys", len(results.get('old_unused_keys', []))],
+                ["Old Used Access Keys", len(results.get('old_used_keys', []))],
+            ])
+        
+        users_without_mfa = len([u for u in results['inactive_users'] + results['active_users'] 
+                                if u.get('MFAEnabled') == False])
+        summary_data.append(["Users Without MFA", users_without_mfa])
+        
+        for row_data in summary_data:
+            ws_summary.append(row_data)
+        
+        # Style summary sheet
+        ws_summary['A1'].font = Font(bold=True, size=14)
+        ws_summary.merge_cells('A1:B1')
+        ws_summary['A6'].font = header_font
+        ws_summary['B6'].font = header_font
+        ws_summary.column_dimensions['A'].width = 30
+        ws_summary.column_dimensions['B'].width = 20
+        
+        # TAB 2: All Users
+        ws_users = wb.create_sheet("All Users")
+        user_headers = [
+            'Username', 'Status', 'Created', 'Age (Days)', 'Last Activity', 
+            'Activity Type', 'Days Since Activity', 'Total Keys', 'Active Keys',
+            'Old Unused Keys', 'Old Used Keys', 'MFA Enabled', 'Policy Count', 
+            'Risky Policies', 'All Policies', 'Managed Policies', 'Inline Policies'
+        ]
+        ws_users.append(user_headers)
+        
+        for user in results['inactive_users'] + results['active_users']:
+            managed_policies = []
+            inline_policies = []
+            
+            for policy in user.get('Policies', []):
+                if policy.get('Type') == 'Managed':
+                    managed_policies.append(policy.get('PolicyName', ''))
+                elif policy.get('Type') == 'Inline':
+                    inline_policies.append(policy.get('PolicyName', ''))
+            
+            keys_detail = user.get('AccessKeysDetail', {})
+            
+            row = [
+                user['Username'],
+                'Inactive' if user in results['inactive_users'] else 'Active',
+                user['Created'].strftime('%Y-%m-%d %H:%M:%S') if user['Created'] else '',
+                user['AgeInDays'],
+                user['LastActivity'].strftime('%Y-%m-%d %H:%M:%S') if user['LastActivity'] else 'Never',
+                user['ActivityType'],
+                user['DaysSinceActivity'] if user['DaysSinceActivity'] is not None else '',
+                user['AccessKeys'],
+                user['ActiveAccessKeys'],
+                len(keys_detail.get('old_unused_keys', [])),
+                len(keys_detail.get('old_used_keys', [])),
+                'Yes' if user.get('MFAEnabled') else 'No' if user.get('MFAEnabled') == False else 'N/A',
+                user.get('PolicyCount', 0),
+                '; '.join(user.get('RiskyPolicies', [])),
+                '; '.join([f"{p.get('PolicyName', '')} ({p.get('Type', '')})" for p in user.get('Policies', [])]),
+                '; '.join(managed_policies),
+                '; '.join(inline_policies)
+            ]
+            ws_users.append(row)
+        
+        style_worksheet(ws_users, user_headers)
+        
+        # Conditional formatting for inactive users
+        for row in range(2, ws_users.max_row + 1):
+            status_cell = ws_users[f'B{row}']
+            mfa_cell = ws_users[f'L{row}']
+            
+            if status_cell.value == 'Inactive':
+                for col in range(1, len(user_headers) + 1):
+                    ws_users.cell(row, col).fill = warning_fill
+            
+            if mfa_cell.value == 'No':
+                mfa_cell.font = Font(color="FF0000", bold=True)
+        
+        # TAB 3: All Roles
+        ws_roles = wb.create_sheet("All Roles")
+        role_headers = [
+            'Role Name', 'Status', 'Created', 'Age (Days)', 'Last Used', 'Days Since Use',
+            'Last Used Region', 'Path', 'Service Linked', 'Policy Count',
+            'Risky Policies', 'All Policies', 'Managed Policies', 'Inline Policies'
+        ]
+        ws_roles.append(role_headers)
+        
+        for role in results['inactive_roles'] + results['active_roles']:
+            managed_policies = []
+            inline_policies = []
+            
+            for policy in role.get('Policies', []):
+                if policy.get('Type') == 'Managed':
+                    managed_policies.append(policy.get('PolicyName', ''))
+                elif policy.get('Type') == 'Inline':
+                    inline_policies.append(policy.get('PolicyName', ''))
+            
+            row = [
+                role['RoleName'],
+                'Inactive' if role in results['inactive_roles'] else 'Active',
+                role['Created'].strftime('%Y-%m-%d %H:%M:%S') if role['Created'] else '',
+                role['AgeInDays'],
+                role['LastUsed'].strftime('%Y-%m-%d %H:%M:%S') if role['LastUsed'] else 'Never',
+                role['DaysSinceUse'] if role['DaysSinceUse'] is not None else '',
+                role['LastUsedRegion'],
+                role['Path'],
+                'Yes' if role['IsServiceLinked'] else 'No',
+                role.get('PolicyCount', 0),
+                '; '.join(role.get('RiskyPolicies', [])),
+                '; '.join([f"{p.get('PolicyName', '')} ({p.get('Type', '')})" for p in role.get('Policies', [])]),
+                '; '.join(managed_policies),
+                '; '.join(inline_policies)
+            ]
+            ws_roles.append(row)
+        
+        style_worksheet(ws_roles, role_headers)
+        
+        # Conditional formatting for inactive roles
+        for row in range(2, ws_roles.max_row + 1):
+            status_cell = ws_roles[f'B{row}']
+            if status_cell.value == 'Inactive':
+                for col in range(1, len(role_headers) + 1):
+                    ws_roles.cell(row, col).fill = warning_fill
+        
+        # TAB 4: Old Unused Access Keys
+        if self.config['analyze_access_keys'] and results.get('old_unused_keys'):
+            ws_unused_keys = wb.create_sheet("Old Unused Keys")
+            unused_key_headers = ['Username', 'Access Key ID', 'Status', 'Created', 'Age (Days)']
+            ws_unused_keys.append(unused_key_headers)
+            
+            for key in results['old_unused_keys']:
+                row = [
+                    key['Username'],
+                    key['AccessKeyId'],
+                    key['Status'],
+                    key['Created'].strftime('%Y-%m-%d %H:%M:%S'),
+                    key['AgeInDays']
+                ]
+                ws_unused_keys.append(row)
+            
+            style_worksheet(ws_unused_keys, unused_key_headers)
+            
+            # Highlight all rows as these are security issues
+            for row in range(2, ws_unused_keys.max_row + 1):
+                for col in range(1, len(unused_key_headers) + 1):
+                    ws_unused_keys.cell(row, col).fill = warning_fill
+        
+        # TAB 5: Old Used Access Keys
+        if self.config['analyze_access_keys'] and results.get('old_used_keys'):
+            ws_used_keys = wb.create_sheet("Old Used Keys")
+            used_key_headers = [
+                'Username', 'Access Key ID', 'Status', 'Created', 'Age (Days)',
+                'Last Used', 'Days Since Last Use', 'Last Used Service', 'Last Used Region'
+            ]
+            ws_used_keys.append(used_key_headers)
+            
+            for key in results['old_used_keys']:
+                row = [
+                    key['Username'],
+                    key['AccessKeyId'],
+                    key['Status'],
+                    key['Created'].strftime('%Y-%m-%d %H:%M:%S'),
+                    key['AgeInDays'],
+                    key['LastUsed'].strftime('%Y-%m-%d %H:%M:%S') if key.get('LastUsed') else 'Never',
+                    key.get('DaysSinceLastUse', ''),
+                    key.get('LastUsedService', 'N/A'),
+                    key.get('LastUsedRegion', 'N/A')
+                ]
+                ws_used_keys.append(row)
+            
+            style_worksheet(ws_used_keys, used_key_headers)
+            
+            # Highlight all rows as these are security issues
+            for row in range(2, ws_used_keys.max_row + 1):
+                for col in range(1, len(used_key_headers) + 1):
+                    ws_used_keys.cell(row, col).fill = warning_fill
+        
+        # TAB 6: Users Without MFA
+        users_no_mfa = [u for u in results['inactive_users'] + results['active_users'] 
+                       if u.get('MFAEnabled') == False]
+        if users_no_mfa:
+            ws_no_mfa = wb.create_sheet("Users Without MFA")
+            mfa_headers = ['Username', 'Status', 'Last Activity', 'Days Since Activity', 'Active Keys']
+            ws_no_mfa.append(mfa_headers)
+            
+            for user in users_no_mfa:
+                row = [
+                    user['Username'],
+                    'Inactive' if user in results['inactive_users'] else 'Active',
+                    user['LastActivity'].strftime('%Y-%m-%d %H:%M:%S') if user['LastActivity'] else 'Never',
+                    user['DaysSinceActivity'] if user['DaysSinceActivity'] is not None else 'N/A',
+                    user['ActiveAccessKeys']
+                ]
+                ws_no_mfa.append(row)
+            
+            style_worksheet(ws_no_mfa, mfa_headers)
+            
+            # Highlight all rows as these are security issues
+            for row in range(2, ws_no_mfa.max_row + 1):
+                for col in range(1, len(mfa_headers) + 1):
+                    ws_no_mfa.cell(row, col).fill = warning_fill
+        
+        # TAB 7: Risky Policies
+        if self.config['analyze_policies']:
+            high_risk_users = [u for u in results['inactive_users'] + results['active_users'] 
+                             if u.get('RiskyPolicies')]
+            high_risk_roles = [r for r in results['inactive_roles'] + results['active_roles'] 
+                             if r.get('RiskyPolicies')]
+            
+            if high_risk_users or high_risk_roles:
+                ws_risky = wb.create_sheet("Risky Policies")
+                risky_headers = ['Type', 'Name', 'Status', 'Risky Policies']
+                ws_risky.append(risky_headers)
+                
+                for user in high_risk_users:
+                    row = [
+                        'User',
+                        user['Username'],
+                        'Inactive' if user in results['inactive_users'] else 'Active',
+                        '; '.join(user.get('RiskyPolicies', []))
+                    ]
+                    ws_risky.append(row)
+                
+                for role in high_risk_roles:
+                    row = [
+                        'Role',
+                        role['RoleName'],
+                        'Inactive' if role in results['inactive_roles'] else 'Active',
+                        '; '.join(role.get('RiskyPolicies', []))
+                    ]
+                    ws_risky.append(row)
+                
+                style_worksheet(ws_risky, risky_headers)
+                
+                # Highlight all rows as these are security concerns
+                for row in range(2, ws_risky.max_row + 1):
+                    for col in range(1, len(risky_headers) + 1):
+                        ws_risky.cell(row, col).fill = warning_fill
+        
+        # Save workbook
+        wb.save(excel_filename)
+        self.logger.info(f"Excel file created: {excel_filename}")
+        
+        return [excel_filename]
+    
     def export_to_csv(self, results, filename_base):
-        """Export comprehensive results to CSV format"""
+        """Export comprehensive results to CSV format (fallback if Excel not available)"""
         files_created = []
         
         # Export users with all details
@@ -1089,8 +1420,11 @@ class IAMSecurityAnalyzer:
                 text_file.write("\n".join(report_lines))
             files_created.append(text_filename)
         
-        # Create CSV exports
-        if 'csv' in self.config['output_formats']:
+        # Create Excel or CSV exports
+        if 'excel' in self.config['output_formats']:
+            excel_files = self.export_to_excel(results, filename_base, account_id, days_threshold)
+            files_created.extend(excel_files)
+        elif 'csv' in self.config['output_formats']:
             csv_files = self.export_to_csv(results, filename_base)
             files_created.extend(csv_files)
         
@@ -1107,10 +1441,13 @@ def main():
         print("  ✓ Policy attachment analysis with risk assessment")
         print("  ✓ MFA status checking for all users")
         print("  ✓ Parallel processing for improved performance")
-        print("  ✓ Multiple export formats (TXT, CSV)")
+        print("  ✓ Excel export with multiple tabs (or CSV fallback)")
         print("  ✓ Configurable filtering and exclusions")
         print("  ✓ Comprehensive security recommendations")
         print("  ✓ Risk scoring and prioritization")
+        
+        if not EXCEL_AVAILABLE:
+            print("\n⚠️  Note: openpyxl not installed. Install with 'pip install openpyxl' for Excel export.")
         
         # Initialize analyzer
         analyzer = IAMSecurityAnalyzer()
