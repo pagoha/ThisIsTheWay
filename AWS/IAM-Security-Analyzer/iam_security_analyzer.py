@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
     'days_threshold': 200,
     'max_workers': 5,
     'retry_attempts': 3,
-    'output_formats': ['txt', 'excel'],  # Changed default to excel
+    'output_formats': ['txt', 'excel'],
     'exclude_patterns': [],
     'check_mfa': True,
     'analyze_policies': True,
@@ -964,6 +964,12 @@ class IAMSecurityAnalyzer:
         warning_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
         success_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
         
+        # New styles for findings guide
+        section_header_font = Font(bold=True, size=12, color="FFFFFF")
+        section_header_fill = PatternFill(start_color="D9534F", end_color="D9534F", fill_type="solid")
+        finding_title_font = Font(bold=True, size=10, color="000000")
+        finding_title_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+        
         border_style = Border(
             left=Side(style='thin'),
             right=Side(style='thin'),
@@ -991,7 +997,7 @@ class IAMSecurityAnalyzer:
                             max_length = len(str(cell.value))
                     except:
                         pass
-                adjusted_width = min(max_length + 2, 50)  # Max width of 50
+                adjusted_width = min(max_length + 2, 50)
                 ws.column_dimensions[column].width = adjusted_width
             
             # Freeze header row
@@ -999,6 +1005,8 @@ class IAMSecurityAnalyzer:
         
         # TAB 1: Summary
         ws_summary = wb.create_sheet("Summary")
+        
+        # Basic summary data
         summary_data = [
             ["AWS IAM Security Analysis Summary"],
             ["Account ID", account_id],
@@ -1024,16 +1032,109 @@ class IAMSecurityAnalyzer:
                                 if u.get('MFAEnabled') == False])
         summary_data.append(["Users Without MFA", users_without_mfa])
         
+        # Add summary data
         for row_data in summary_data:
             ws_summary.append(row_data)
         
-        # Style summary sheet
+        # Style summary section
         ws_summary['A1'].font = Font(bold=True, size=14)
         ws_summary.merge_cells('A1:B1')
         ws_summary['A6'].font = header_font
         ws_summary['B6'].font = header_font
         ws_summary.column_dimensions['A'].width = 30
         ws_summary.column_dimensions['B'].width = 20
+        
+        # Add spacing before findings guide
+        current_row = len(summary_data) + 3
+        
+        # Add Findings Guide section
+        ws_summary.cell(row=current_row, column=1, value="SECURITY FINDINGS REFERENCE GUIDE")
+        ws_summary.merge_cells(f'A{current_row}:B{current_row}')
+        ws_summary.cell(row=current_row, column=1).font = section_header_font
+        ws_summary.cell(row=current_row, column=1).fill = section_header_fill
+        ws_summary.cell(row=current_row, column=1).alignment = Alignment(horizontal="center", vertical="center")
+        current_row += 2
+        
+        # Define findings guide content
+        findings_guide = [
+            {
+                "number": "1",
+                "title": "Old Unused Access Keys",
+                "risk": "🔴 HIGH - Credentials that could be compromised without detection",
+                "criteria": "Access keys older than threshold that have never been used",
+                "recommendation": "Delete immediately"
+            },
+            {
+                "number": "2",
+                "title": "Old Used Access Keys",
+                "risk": "🟡 MEDIUM-HIGH - Potentially compromised or forgotten credentials",
+                "criteria": "Access keys not used within threshold period",
+                "recommendation": "Rotate or delete after confirming they're no longer needed"
+            },
+            {
+                "number": "3",
+                "title": "Inactive Users",
+                "risk": "⚠️ MEDIUM - Abandoned accounts that could be compromised",
+                "criteria": "No console or programmatic access within threshold period",
+                "recommendation": "Disable or delete unused accounts"
+            },
+            {
+                "number": "4",
+                "title": "Inactive Roles",
+                "risk": "⚠️ MEDIUM - Unnecessary privileges that could be exploited",
+                "criteria": "Roles not assumed within threshold period (excludes service-linked roles)",
+                "recommendation": "Delete unused roles"
+            },
+            {
+                "number": "5",
+                "title": "Users Without MFA",
+                "risk": "🔴 HIGH - Vulnerable to credential theft and account takeover",
+                "criteria": "IAM users without MFA devices configured",
+                "recommendation": "Enforce MFA immediately"
+            },
+            {
+                "number": "6",
+                "title": "Risky Policy Attachments",
+                "risk": "🔴 HIGH - Excessive privileges that violate least privilege principle",
+                "criteria": "Policies containing 'Admin', 'Full', '*', or 'PowerUser' in name",
+                "recommendation": "Review and apply least privilege principle"
+            }
+        ]
+        
+        # Add each finding to the guide
+        for finding in findings_guide:
+            # Finding title row
+            ws_summary.cell(row=current_row, column=1, value=f"{finding['number']}. {finding['title']}")
+            ws_summary.merge_cells(f'A{current_row}:B{current_row}')
+            ws_summary.cell(row=current_row, column=1).font = finding_title_font
+            ws_summary.cell(row=current_row, column=1).fill = finding_title_fill
+            ws_summary.cell(row=current_row, column=1).alignment = Alignment(horizontal="left", vertical="center")
+            current_row += 1
+            
+            # Risk row
+            ws_summary.cell(row=current_row, column=1, value="Risk:")
+            ws_summary.cell(row=current_row, column=2, value=finding['risk'])
+            ws_summary.cell(row=current_row, column=1).font = Font(bold=True, size=9)
+            ws_summary.cell(row=current_row, column=2).alignment = Alignment(wrap_text=True)
+            current_row += 1
+            
+            # Criteria row
+            ws_summary.cell(row=current_row, column=1, value="Criteria:")
+            ws_summary.cell(row=current_row, column=2, value=finding['criteria'])
+            ws_summary.cell(row=current_row, column=1).font = Font(bold=True, size=9)
+            ws_summary.cell(row=current_row, column=2).alignment = Alignment(wrap_text=True)
+            current_row += 1
+            
+            # Recommendation row
+            ws_summary.cell(row=current_row, column=1, value="Recommendation:")
+            ws_summary.cell(row=current_row, column=2, value=finding['recommendation'])
+            ws_summary.cell(row=current_row, column=1).font = Font(bold=True, size=9)
+            ws_summary.cell(row=current_row, column=2).alignment = Alignment(wrap_text=True)
+            ws_summary.row_dimensions[current_row].height = 30
+            current_row += 2
+        
+        # Adjust column B width for better text wrapping
+        ws_summary.column_dimensions['B'].width = 80
         
         # TAB 2: All Users
         ws_users = wb.create_sheet("All Users")
