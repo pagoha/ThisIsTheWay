@@ -735,6 +735,9 @@ class NATGatewayAnalyzer:
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
         header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         
+        section_header_font = Font(bold=True, size=12, color="366092")
+        bold_font = Font(bold=True)
+        
         border_style = Border(
             left=Side(style='thin'),
             right=Side(style='thin'),
@@ -761,24 +764,147 @@ class NATGatewayAnalyzer:
                             max_length = len(str(cell.value))
                     except:
                         pass
-                adjusted_width = min(max_length + 2, 50)
+                adjusted_width = min(max_length + 2, 80)
                 ws.column_dimensions[column_letter].width = adjusted_width
         
         # Sheet 1: Summary
         ws_summary = wb.active
         ws_summary.title = "Summary"
         
+        # Report Header
         ws_summary.append(['NAT Gateway Analysis Report'])
+        ws_summary['A1'].font = Font(bold=True, size=16, color="366092")
         ws_summary.append([])
+        
+        # Analysis Information
+        ws_summary.append(['ANALYSIS INFORMATION'])
+        ws_summary['A3'].font = section_header_font
         ws_summary.append(['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
         ws_summary.append(['AWS Profile:', self.profile_name])
         ws_summary.append(['AWS Account:', f"{self.account_id}" + (f" ({self.account_alias})" if self.account_alias else "")])
         ws_summary.append(['Regions Analyzed:', ', '.join(self.regions)])
-        ws_summary.append(['Total NAT Gateways Found:', len(self.results)])
         ws_summary.append([])
         
-        # Make title bold and larger
-        ws_summary['A1'].font = Font(bold=True, size=14)
+        # Results Summary
+        ws_summary.append(['RESULTS SUMMARY'])
+        ws_summary['A9'].font = section_header_font
+        ws_summary.append(['Total NAT Gateways Found:', len(self.results)])
+        
+        # Count totals
+        total_route_tables = sum(len(nat['route_tables']) for nat in self.results)
+        total_subnets = sum(len(nat['associated_subnets']) for nat in self.results)
+        total_ec2 = sum(len(nat['resources']['ec2_instances']) for nat in self.results)
+        total_lambda = sum(len(nat['resources']['lambda_functions']) for nat in self.results)
+        total_rds = sum(len(nat['resources']['rds_instances']) for nat in self.results)
+        
+        ws_summary.append(['Total Route Tables:', total_route_tables])
+        ws_summary.append(['Total Associated Subnets:', total_subnets])
+        ws_summary.append(['Total EC2 Instances:', total_ec2])
+        ws_summary.append(['Total Lambda Functions:', total_lambda])
+        ws_summary.append(['Total RDS Instances:', total_rds])
+        ws_summary.append(['Total Resources:', total_ec2 + total_lambda + total_rds])
+        ws_summary.append([])
+        
+        # Tab Descriptions
+        current_row = ws_summary.max_row + 1
+        ws_summary.append(['WORKBOOK TABS GUIDE'])
+        ws_summary[f'A{current_row}'].font = section_header_font
+        ws_summary.append([])
+        
+        # Create a styled table for tab descriptions
+        tab_descriptions = [
+            {
+                'tab': 'Summary',
+                'description': 'Overview of the analysis report',
+                'purpose': 'Provides high-level information about the analysis including account details, regions analyzed, total counts, and descriptions of all tabs in this workbook.',
+                'contains': 'Report metadata, analysis parameters, summary statistics, and this guide'
+            },
+            {
+                'tab': 'NAT Gateways',
+                'description': 'Complete list of all NAT Gateways',
+                'purpose': 'Main inventory of NAT Gateways with their configuration details, location information, and resource counts. Use this tab to get a complete overview of all NAT Gateways in the analyzed regions.',
+                'contains': 'NAT Gateway ID, Name, Region, State, Elastic IP, VPC details, Subnet details, Availability Zone, resource counts, and creation time'
+            },
+            {
+                'tab': 'Route Tables',
+                'description': 'Route tables that route traffic through NAT Gateways',
+                'purpose': 'Identifies which route tables are configured to send traffic through each NAT Gateway. This helps understand the routing configuration and traffic flow patterns.',
+                'contains': 'Route Table ID, Route Table Name, associated NAT Gateway, destination CIDR blocks'
+            },
+            {
+                'tab': 'Associated Subnets',
+                'description': 'Subnets that use NAT Gateways for outbound traffic',
+                'purpose': 'Lists all subnets whose route tables direct traffic through NAT Gateways. These are typically private subnets that need internet access for outbound connections.',
+                'contains': 'Subnet ID, Subnet Name, CIDR blocks, Availability Zones, associated NAT Gateway'
+            },
+            {
+                'tab': 'EC2 Instances',
+                'description': 'EC2 instances using NAT Gateways',
+                'purpose': 'Identifies all EC2 instances located in subnets that route outbound traffic through NAT Gateways. Useful for understanding which workloads depend on NAT Gateway connectivity.',
+                'contains': 'Instance ID, Instance Name, Instance Type, State, Private IP, Subnet, associated NAT Gateway'
+            },
+            {
+                'tab': 'Lambda Functions',
+                'description': 'Lambda functions using NAT Gateways',
+                'purpose': 'Lists Lambda functions deployed in VPC subnets that use NAT Gateways for external connectivity. Important for identifying serverless workloads with external dependencies.',
+                'contains': 'Function Name, Runtime, VPC Subnets, associated NAT Gateway'
+            },
+            {
+                'tab': 'RDS Instances',
+                'description': 'RDS database instances using NAT Gateways',
+                'purpose': 'Identifies RDS instances in subnets that may route traffic through NAT Gateways. Helps understand database connectivity patterns and potential external dependencies.',
+                'contains': 'DB Instance ID, Engine type, Status, DB Subnets, associated NAT Gateway'
+            }
+        ]
+        
+        # Add header row for tab descriptions
+        ws_summary.append(['Tab Name', 'Description', 'Purpose', 'What It Contains'])
+        header_row = ws_summary.max_row
+        
+        for col in range(1, 5):
+            cell = ws_summary.cell(row=header_row, column=col)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+            cell.border = border_style
+        
+        # Add tab description rows
+        for tab_info in tab_descriptions:
+            ws_summary.append([
+                tab_info['tab'],
+                tab_info['description'],
+                tab_info['purpose'],
+                tab_info['contains']
+            ])
+            row = ws_summary.max_row
+            
+            # Style the row
+            for col in range(1, 5):
+                cell = ws_summary.cell(row=row, column=col)
+                cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+                cell.border = border_style
+                
+                # Bold the tab name
+                if col == 1:
+                    cell.font = bold_font
+        
+        # Set column widths for summary sheet
+        ws_summary.column_dimensions['A'].width = 20
+        ws_summary.column_dimensions['B'].width = 35
+        ws_summary.column_dimensions['C'].width = 50
+        ws_summary.column_dimensions['D'].width = 50
+        
+        # Add notes section
+        ws_summary.append([])
+        ws_summary.append([])
+        notes_row = ws_summary.max_row + 1
+        ws_summary.append(['NOTES'])
+        ws_summary[f'A{notes_row}'].font = section_header_font
+        ws_summary.append(['• NAT Gateways in "deleted" state are excluded from this analysis'])
+        ws_summary.append(['• Resources are identified based on subnet associations with route tables'])
+        ws_summary.append(['• A resource "uses" a NAT Gateway if its subnet has a route table pointing to that NAT Gateway'])
+        ws_summary.append(['• Each tab can be filtered and sorted independently for detailed analysis'])
+        ws_summary.append(['• For questions or issues, contact your cloud infrastructure team'])
         
         # Sheet 2: NAT Gateways
         ws_nat = wb.create_sheet("NAT Gateways")
@@ -968,7 +1094,7 @@ def main():
         if excel_file:
             print(f"✓ Excel workbook saved: {excel_file}")
             print(f"  Contains 7 tabs:")
-            print(f"    - Summary")
+            print(f"    - Summary (with detailed tab guide)")
             print(f"    - NAT Gateways")
             print(f"    - Route Tables")
             print(f"    - Associated Subnets")
