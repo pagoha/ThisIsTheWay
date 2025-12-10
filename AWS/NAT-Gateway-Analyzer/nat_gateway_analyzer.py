@@ -13,6 +13,17 @@ from datetime import datetime
 from collections import defaultdict
 from botocore.exceptions import ClientError
 
+# Try to import openpyxl for Excel support
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    EXCEL_AVAILABLE = True
+except ImportError:
+    EXCEL_AVAILABLE = False
+    print("Warning: openpyxl not installed. Excel export will not be available.")
+    print("Install with: pip install openpyxl")
+
 class NATGatewayAnalyzer:
     def __init__(self):
         """Initialize the analyzer"""
@@ -173,7 +184,10 @@ class NATGatewayAnalyzer:
         print("\nOutput formats will be generated:")
         print("  ✓ Console output (always generated)")
         print("  ✓ Text file report")
-        print("  ✓ CSV files (detailed)")
+        if EXCEL_AVAILABLE:
+            print("  ✓ Excel workbook (single file with multiple tabs)")
+        else:
+            print("  ✗ Excel not available (install openpyxl for Excel support)")
         
         self.output_prefix = input("\nEnter output filename prefix (default: nat_gateway_analysis): ").strip() or "nat_gateway_analysis"
         
@@ -707,136 +721,218 @@ class NATGatewayAnalyzer:
         
         return filename
     
-    def export_to_csv(self):
-        """Export results to CSV files"""
-        # Main NAT Gateway CSV
-        nat_gw_filename = f"{self.output_prefix}_nat_gateways.csv"
+    def export_to_excel(self):
+        """Export results to Excel workbook with multiple sheets"""
+        if not EXCEL_AVAILABLE:
+            print("Warning: openpyxl not installed. Skipping Excel export.")
+            return None
         
-        with open(nat_gw_filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                'NAT Gateway ID', 'Name', 'Region', 'State', 'Elastic IP',
-                'VPC ID', 'VPC Name', 'VPC CIDR',
-                'Subnet ID', 'Subnet Name', 'Subnet CIDR', 'Availability Zone',
-                'Route Tables Count', 'Associated Subnets Count',
-                'EC2 Instances Count', 'Lambda Functions Count', 'RDS Instances Count',
-                'Total Resources Count', 'Created Time'
+        filename = f"{self.output_prefix}.xlsx"
+        wb = Workbook()
+        
+        # Define styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        border_style = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Helper function to style headers
+        def style_header_row(ws, row=1):
+            for cell in ws[row]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = border_style
+        
+        # Helper function to auto-size columns
+        def auto_size_columns(ws):
+            for column in ws.columns:
+                max_length = 0
+                column_letter = get_column_letter(column[0].column)
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Sheet 1: Summary
+        ws_summary = wb.active
+        ws_summary.title = "Summary"
+        
+        ws_summary.append(['NAT Gateway Analysis Report'])
+        ws_summary.append([])
+        ws_summary.append(['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        ws_summary.append(['AWS Profile:', self.profile_name])
+        ws_summary.append(['AWS Account:', f"{self.account_id}" + (f" ({self.account_alias})" if self.account_alias else "")])
+        ws_summary.append(['Regions Analyzed:', ', '.join(self.regions)])
+        ws_summary.append(['Total NAT Gateways Found:', len(self.results)])
+        ws_summary.append([])
+        
+        # Make title bold and larger
+        ws_summary['A1'].font = Font(bold=True, size=14)
+        
+        # Sheet 2: NAT Gateways
+        ws_nat = wb.create_sheet("NAT Gateways")
+        ws_nat.append([
+            'NAT Gateway ID', 'Name', 'Region', 'State', 'Elastic IP',
+            'VPC ID', 'VPC Name', 'VPC CIDR',
+            'Subnet ID', 'Subnet Name', 'Subnet CIDR', 'Availability Zone',
+            'Route Tables Count', 'Associated Subnets Count',
+            'EC2 Instances Count', 'Lambda Functions Count', 'RDS Instances Count',
+            'Total Resources Count', 'Created Time'
+        ])
+        style_header_row(ws_nat)
+        
+        for nat in self.results:
+            resources = nat['resources']
+            ws_nat.append([
+                nat['nat_gateway_id'],
+                nat['nat_gateway_name'],
+                nat['region'],
+                nat['state'],
+                nat['elastic_ip'],
+                nat['vpc_id'],
+                nat['vpc_name'],
+                nat['vpc_cidr'],
+                nat['subnet_id'],
+                nat['subnet_name'],
+                nat['subnet_cidr'],
+                nat['availability_zone'],
+                len(nat['route_tables']),
+                len(nat['associated_subnets']),
+                len(resources['ec2_instances']),
+                len(resources['lambda_functions']),
+                len(resources['rds_instances']),
+                len(resources['ec2_instances']) + len(resources['lambda_functions']) + len(resources['rds_instances']),
+                str(nat['created_time'])
             ])
-            
-            for nat in self.results:
-                resources = nat['resources']
-                writer.writerow([
+        
+        auto_size_columns(ws_nat)
+        
+        # Sheet 3: Route Tables
+        ws_rt = wb.create_sheet("Route Tables")
+        ws_rt.append([
+            'NAT Gateway ID', 'NAT Gateway Name', 'Region',
+            'Route Table ID', 'Route Table Name', 'Destination'
+        ])
+        style_header_row(ws_rt)
+        
+        for nat in self.results:
+            for rt in nat['route_tables']:
+                ws_rt.append([
                     nat['nat_gateway_id'],
                     nat['nat_gateway_name'],
                     nat['region'],
-                    nat['state'],
-                    nat['elastic_ip'],
-                    nat['vpc_id'],
-                    nat['vpc_name'],
-                    nat['vpc_cidr'],
-                    nat['subnet_id'],
-                    nat['subnet_name'],
-                    nat['subnet_cidr'],
-                    nat['availability_zone'],
-                    len(nat['route_tables']),
-                    len(nat['associated_subnets']),
-                    len(resources['ec2_instances']),
-                    len(resources['lambda_functions']),
-                    len(resources['rds_instances']),
-                    len(resources['ec2_instances']) + len(resources['lambda_functions']) + len(resources['rds_instances']),
-                    nat['created_time']
+                    rt['route_table_id'],
+                    rt['route_table_name'],
+                    rt['destination']
                 ])
         
-        # Route Tables CSV
-        rt_filename = f"{self.output_prefix}_route_tables.csv"
+        auto_size_columns(ws_rt)
         
-        with open(rt_filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                'NAT Gateway ID', 'NAT Gateway Name', 'Region',
-                'Route Table ID', 'Route Table Name', 'Destination'
-            ])
-            
-            for nat in self.results:
-                for rt in nat['route_tables']:
-                    writer.writerow([
-                        nat['nat_gateway_id'],
-                        nat['nat_gateway_name'],
-                        nat['region'],
-                        rt['route_table_id'],
-                        rt['route_table_name'],
-                        rt['destination']
-                    ])
+        # Sheet 4: Associated Subnets
+        ws_subnets = wb.create_sheet("Associated Subnets")
+        ws_subnets.append([
+            'NAT Gateway ID', 'NAT Gateway Name', 'Region',
+            'Subnet ID', 'Subnet Name', 'Subnet CIDR', 'Availability Zone'
+        ])
+        style_header_row(ws_subnets)
         
-        # EC2 Instances CSV
-        ec2_filename = f"{self.output_prefix}_ec2_instances.csv"
+        for nat in self.results:
+            for subnet in nat['associated_subnets']:
+                ws_subnets.append([
+                    nat['nat_gateway_id'],
+                    nat['nat_gateway_name'],
+                    nat['region'],
+                    subnet['subnet_id'],
+                    subnet['subnet_name'],
+                    subnet['subnet_cidr'],
+                    subnet['availability_zone']
+                ])
         
-        with open(ec2_filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                'NAT Gateway ID', 'NAT Gateway Name', 'Region',
-                'Instance ID', 'Instance Name', 'Instance Type',
-                'State', 'Private IP', 'Subnet ID'
-            ])
-            
-            for nat in self.results:
-                for instance in nat['resources']['ec2_instances']:
-                    writer.writerow([
-                        nat['nat_gateway_id'],
-                        nat['nat_gateway_name'],
-                        nat['region'],
-                        instance['instance_id'],
-                        instance['instance_name'],
-                        instance['instance_type'],
-                        instance['state'],
-                        instance['private_ip'],
-                        instance['subnet_id']
-                    ])
+        auto_size_columns(ws_subnets)
         
-        # Lambda Functions CSV
-        lambda_filename = f"{self.output_prefix}_lambda_functions.csv"
+        # Sheet 5: EC2 Instances
+        ws_ec2 = wb.create_sheet("EC2 Instances")
+        ws_ec2.append([
+            'NAT Gateway ID', 'NAT Gateway Name', 'Region',
+            'Instance ID', 'Instance Name', 'Instance Type',
+            'State', 'Private IP', 'Subnet ID'
+        ])
+        style_header_row(ws_ec2)
         
-        with open(lambda_filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                'NAT Gateway ID', 'NAT Gateway Name', 'Region',
-                'Function Name', 'Runtime', 'Subnets'
-            ])
-            
-            for nat in self.results:
-                for func in nat['resources']['lambda_functions']:
-                    writer.writerow([
-                        nat['nat_gateway_id'],
-                        nat['nat_gateway_name'],
-                        nat['region'],
-                        func['function_name'],
-                        func['runtime'],
-                        ', '.join(func['subnets'])
-                    ])
+        for nat in self.results:
+            for instance in nat['resources']['ec2_instances']:
+                ws_ec2.append([
+                    nat['nat_gateway_id'],
+                    nat['nat_gateway_name'],
+                    nat['region'],
+                    instance['instance_id'],
+                    instance['instance_name'],
+                    instance['instance_type'],
+                    instance['state'],
+                    instance['private_ip'],
+                    instance['subnet_id']
+                ])
         
-        # RDS Instances CSV
-        rds_filename = f"{self.output_prefix}_rds_instances.csv"
+        auto_size_columns(ws_ec2)
         
-        with open(rds_filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                'NAT Gateway ID', 'NAT Gateway Name', 'Region',
-                'DB Instance ID', 'Engine', 'Status', 'Subnets'
-            ])
-            
-            for nat in self.results:
-                for db in nat['resources']['rds_instances']:
-                    writer.writerow([
-                        nat['nat_gateway_id'],
-                        nat['nat_gateway_name'],
-                        nat['region'],
-                        db['db_instance_id'],
-                        db['engine'],
-                        db['status'],
-                        ', '.join(db['subnets'])
-                    ])
+        # Sheet 6: Lambda Functions
+        ws_lambda = wb.create_sheet("Lambda Functions")
+        ws_lambda.append([
+            'NAT Gateway ID', 'NAT Gateway Name', 'Region',
+            'Function Name', 'Runtime', 'Subnets'
+        ])
+        style_header_row(ws_lambda)
         
-        return [nat_gw_filename, rt_filename, ec2_filename, lambda_filename, rds_filename]
+        for nat in self.results:
+            for func in nat['resources']['lambda_functions']:
+                ws_lambda.append([
+                    nat['nat_gateway_id'],
+                    nat['nat_gateway_name'],
+                    nat['region'],
+                    func['function_name'],
+                    func['runtime'],
+                    ', '.join(func['subnets'])
+                ])
+        
+        auto_size_columns(ws_lambda)
+        
+        # Sheet 7: RDS Instances
+        ws_rds = wb.create_sheet("RDS Instances")
+        ws_rds.append([
+            'NAT Gateway ID', 'NAT Gateway Name', 'Region',
+            'DB Instance ID', 'Engine', 'Status', 'Subnets'
+        ])
+        style_header_row(ws_rds)
+        
+        for nat in self.results:
+            for db in nat['resources']['rds_instances']:
+                ws_rds.append([
+                    nat['nat_gateway_id'],
+                    nat['nat_gateway_name'],
+                    nat['region'],
+                    db['db_instance_id'],
+                    db['engine'],
+                    db['status'],
+                    ', '.join(db['subnets'])
+                ])
+        
+        auto_size_columns(ws_rds)
+        
+        # Save workbook
+        wb.save(filename)
+        
+        return filename
 
 
 def main():
@@ -866,11 +962,22 @@ def main():
     text_file = analyzer.export_to_text()
     print(f"\n✓ Text report saved: {text_file}")
     
-    # CSV files
-    csv_files = analyzer.export_to_csv()
-    print(f"✓ CSV files saved:")
-    for csv_file in csv_files:
-        print(f"  - {csv_file}")
+    # Excel file (if available)
+    if EXCEL_AVAILABLE:
+        excel_file = analyzer.export_to_excel()
+        if excel_file:
+            print(f"✓ Excel workbook saved: {excel_file}")
+            print(f"  Contains 7 tabs:")
+            print(f"    - Summary")
+            print(f"    - NAT Gateways")
+            print(f"    - Route Tables")
+            print(f"    - Associated Subnets")
+            print(f"    - EC2 Instances")
+            print(f"    - Lambda Functions")
+            print(f"    - RDS Instances")
+    else:
+        print("\n✗ Excel export skipped (openpyxl not installed)")
+        print("  Install with: pip install openpyxl")
     
     print()
     print("="*80)
