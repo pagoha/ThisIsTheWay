@@ -5,10 +5,13 @@ Analyzes NAT Gateways in an AWS account and identifies resources using them.
 """
 
 import boto3
+import botocore.session
 import csv
+import sys
+import time
 from datetime import datetime
 from collections import defaultdict
-import sys
+from botocore.exceptions import ClientError
 
 class NATGatewayAnalyzer:
     def __init__(self):
@@ -18,40 +21,59 @@ class NATGatewayAnalyzer:
         self.results = []
         self.account_id = None
         self.account_alias = None
+        self.profile_name = None
+        self.output_prefix = None
         
-    def setup_interactive(self):
-        """Interactive setup for the analyzer"""
-        print("=" * 80)
-        print("AWS NAT GATEWAY ANALYZER")
-        print("=" * 80)
-        print()
+    def get_profile_and_account_info(self):
+        """Prompt for AWS profile and confirm account details"""
+        session = botocore.session.Session()
+        profiles = session.available_profiles
         
-        # AWS Profile Selection
-        print("Step 1: AWS Profile Configuration")
-        print("-" * 80)
-        use_profile = input("Do you want to use a specific AWS profile? (y/n) [default: n]: ").strip().lower()
+        if not profiles:
+            print("Error: No AWS profiles found. Please configure AWS CLI first.")
+            sys.exit(1)
         
-        if use_profile == 'y':
-            profile_name = input("Enter the AWS profile name: ").strip()
+        print("\n" + "="*80)
+        print("AWS PROFILE SELECTION")
+        print("="*80)
+        print("\nAvailable AWS profiles:")
+        for i, profile in enumerate(profiles, 1):
+            print(f"  {i}. {profile}")
+        
+        # Profile selection logic
+        while True:
             try:
-                self.session = boto3.Session(profile_name=profile_name)
-                print(f"✓ Using AWS profile: {profile_name}")
+                if len(profiles) == 1:
+                    print(f"\nOnly one profile available, using '{profiles[0]}'")
+                    profile_name = profiles[0]
+                    break
+                else:
+                    selection = input("\nEnter profile number or name (or press Enter for default): ").strip()
+                    
+                    if not selection:
+                        profile_name = "default"
+                        break
+                    
+                    if selection.isdigit() and 1 <= int(selection) <= len(profiles):
+                        profile_name = profiles[int(selection) - 1]
+                        break
+                    elif selection in profiles:
+                        profile_name = selection
+                        break
+                    else:
+                        print("Invalid selection. Please try again.")
             except Exception as e:
-                print(f"✗ Error loading profile '{profile_name}': {str(e)}")
-                print("  Falling back to default credentials...")
-                self.session = boto3.Session()
-        else:
-            self.session = boto3.Session()
-            print("✓ Using default AWS credentials")
+                print(f"Error in profile selection: {e}")
         
-        print()
-        
-        # Get account information
+        # Create session and validate
         try:
+            self.session = boto3.Session(profile_name=profile_name)
+            self.profile_name = profile_name
             sts = self.session.client('sts')
+            
             identity = sts.get_caller_identity()
             self.account_id = identity['Account']
-            print(f"AWS Account ID: {self.account_id}")
+            iam_arn = identity['Arn']
             
             # Try to get account alias
             try:
@@ -59,20 +81,47 @@ class NATGatewayAnalyzer:
                 aliases = iam.list_account_aliases()
                 if aliases['AccountAliases']:
                     self.account_alias = aliases['AccountAliases'][0]
-                    print(f"Account Alias: {self.account_alias}")
             except:
                 pass
-                
+            
+            print("\n" + "="*80)
+            print("AWS ACCOUNT INFORMATION")
+            print("="*80)
+            print(f"Profile:        {profile_name}")
+            print(f"Account ID:     {self.account_id}")
+            if self.account_alias:
+                print(f"Account Alias:  {self.account_alias}")
+            print(f"IAM ARN:        {iam_arn}")
+            print("="*80)
+            
+            confirmation = input("\nIs this the correct account? (yes/no): ").lower()
+            if confirmation not in ['y', 'yes']:
+                print("\nAborting operation.")
+                sys.exit(0)
+            
+            return True
+            
         except Exception as e:
-            print(f"✗ Error getting account information: {str(e)}")
+            print(f"\nError connecting to AWS with profile '{profile_name}': {e}")
             sys.exit(1)
+    
+    def setup_interactive(self):
+        """Interactive setup for the analyzer"""
+        print("\n" + "="*80)
+        print("AWS NAT GATEWAY ANALYZER")
+        print("="*80)
+        print()
+        
+        # Get profile and account info first
+        self.get_profile_and_account_info()
         
         print()
         
         # Region Selection
-        print("Step 2: Region Selection")
-        print("-" * 80)
-        print("Options:")
+        print("="*80)
+        print("REGION SELECTION")
+        print("="*80)
+        print("\nOptions:")
         print("  1. All regions (comprehensive but slower)")
         print("  2. Specific regions (faster)")
         print("  3. Current region only")
@@ -118,12 +167,13 @@ class NATGatewayAnalyzer:
         print()
         
         # Output Options
-        print("Step 3: Output Options")
-        print("-" * 80)
-        print("Output formats will be generated:")
+        print("="*80)
+        print("OUTPUT OPTIONS")
+        print("="*80)
+        print("\nOutput formats will be generated:")
         print("  ✓ Console output (always generated)")
         print("  ✓ Text file report")
-        print("  ✓ CSV file (detailed)")
+        print("  ✓ CSV files (detailed)")
         
         self.output_prefix = input("\nEnter output filename prefix (default: nat_gateway_analysis): ").strip() or "nat_gateway_analysis"
         
@@ -134,24 +184,25 @@ class NATGatewayAnalyzer:
         print()
         
         # Confirmation
-        print("=" * 80)
+        print("="*80)
         print("ANALYSIS CONFIGURATION SUMMARY")
-        print("=" * 80)
+        print("="*80)
+        print(f"AWS Profile:     {self.profile_name}")
         print(f"AWS Account:     {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else ""))
         print(f"Regions:         {', '.join(self.regions)}")
         print(f"Output Prefix:   {self.output_prefix}")
-        print("=" * 80)
+        print("="*80)
         print()
         
-        confirm = input("Start analysis? (y/n) [default: y]: ").strip().lower() or 'y'
+        confirm = input("Start analysis? (yes/no) [default: yes]: ").strip().lower() or 'yes'
         
-        if confirm != 'y':
+        if confirm not in ['y', 'yes']:
             print("\nAnalysis cancelled.")
             sys.exit(0)
         
-        print("\n" + "=" * 80)
+        print("\n" + "="*80)
         print("STARTING ANALYSIS...")
-        print("=" * 80)
+        print("="*80)
         print()
     
     def _get_all_regions(self):
@@ -411,6 +462,7 @@ class NATGatewayAnalyzer:
         print("NAT GATEWAY ANALYSIS REPORT")
         print("=" * 100)
         print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"AWS Profile: {self.profile_name}")
         print(f"AWS Account: {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else ""))
         print(f"Regions Analyzed: {', '.join(self.regions)}")
         print(f"Total NAT Gateways Found: {len(self.results)}")
@@ -542,6 +594,7 @@ class NATGatewayAnalyzer:
             f.write("NAT GATEWAY ANALYSIS REPORT\n")
             f.write("=" * 100 + "\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"AWS Profile: {self.profile_name}\n")
             f.write(f"AWS Account: {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else "") + "\n")
             f.write(f"Regions Analyzed: {', '.join(self.regions)}\n")
             f.write(f"Total NAT Gateways Found: {len(self.results)}\n")
@@ -796,9 +849,9 @@ def main():
     # Run analysis
     results = analyzer.analyze()
     
-    print("\n" + "=" * 80)
+    print("\n" + "="*80)
     print("ANALYSIS COMPLETE")
-    print("=" * 80)
+    print("="*80)
     print(f"Total NAT Gateways Found: {len(results)}")
     print()
     
@@ -820,9 +873,9 @@ def main():
         print(f"  - {csv_file}")
     
     print()
-    print("=" * 80)
+    print("="*80)
     print("ALL OUTPUTS GENERATED SUCCESSFULLY")
-    print("=" * 80)
+    print("="*80)
 
 
 if __name__ == "__main__":
@@ -833,4 +886,6 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         print(f"\n\nError: {str(e)}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
