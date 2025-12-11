@@ -1,7 +1,23 @@
 #!/usr/bin/env python3
 """
-AWS Storage Analyzer
-Analyzes storage usage across EC2, RDS, DynamoDB, and AWS Backups in an AWS account.
+AWS Storage Audit
+Comprehensive storage analysis and inventory tool for AWS accounts.
+
+Currently Audits:
+  • EC2 EBS Volumes (block storage)
+  • RDS Database Instances (database storage)
+  • DynamoDB Tables (NoSQL storage)
+  • AWS Backup Recovery Points (backup storage)
+
+Planned Coverage:
+  • S3 Buckets (object storage)
+  • EFS File Systems (file storage)
+  • FSx File Systems (managed file storage)
+  • Glacier Vaults (archive storage)
+  • Storage Gateway volumes
+
+This tool provides executive-level reporting with detailed breakdowns by region,
+service, and resource. Exports to both text and Excel formats.
 """
 
 import boto3
@@ -24,9 +40,9 @@ except ImportError:
     print("Warning: openpyxl not installed. Excel export will not be available.")
     print("Install with: pip install openpyxl")
 
-class StorageAnalyzer:
+class StorageAuditor:
     def __init__(self):
-        """Initialize the analyzer"""
+        """Initialize the auditor"""
         self.session = None
         self.regions = []
         self.results = []
@@ -117,9 +133,9 @@ class StorageAnalyzer:
             sys.exit(1)
     
     def setup_interactive(self):
-        """Interactive setup for the analyzer"""
+        """Interactive setup for the auditor"""
         print("\n" + "="*80)
-        print("AWS STORAGE ANALYZER")
+        print("AWS STORAGE AUDIT")
         print("="*80)
         print()
         
@@ -142,11 +158,11 @@ class StorageAnalyzer:
         if choice == "1":
             print("\nFetching all available regions...")
             self.regions = self._get_all_regions()
-            print(f"✓ Will analyze {len(self.regions)} regions")
+            print(f"✓ Will audit {len(self.regions)} regions")
         elif choice == "3":
             current_region = self.session.region_name or 'us-east-1'
             self.regions = [current_region]
-            print(f"✓ Will analyze current region: {current_region}")
+            print(f"✓ Will audit current region: {current_region}")
         else:  # choice == "2" or default
             print("\nCommon regions:")
             common_regions = [
@@ -173,7 +189,7 @@ class StorageAnalyzer:
                     # Region names provided
                     self.regions = [r.strip() for r in region_input.split(',')]
                 
-                print(f"✓ Will analyze {len(self.regions)} region(s): {', '.join(self.regions)}")
+                print(f"✓ Will audit {len(self.regions)} region(s): {', '.join(self.regions)}")
         
         print()
         
@@ -189,7 +205,7 @@ class StorageAnalyzer:
         else:
             print("  ✗ Excel not available (install openpyxl for Excel support)")
         
-        self.output_prefix = input("\nEnter output filename prefix (default: storage_analysis): ").strip() or "storage_analysis"
+        self.output_prefix = input("\nEnter output filename prefix (default: storage_audit): ").strip() or "storage_audit"
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.output_prefix = f"{self.output_prefix}_{timestamp}"
@@ -199,7 +215,7 @@ class StorageAnalyzer:
         
         # Confirmation
         print("="*80)
-        print("ANALYSIS CONFIGURATION SUMMARY")
+        print("AUDIT CONFIGURATION SUMMARY")
         print("="*80)
         print(f"AWS Profile:     {self.profile_name}")
         print(f"AWS Account:     {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else ""))
@@ -208,14 +224,14 @@ class StorageAnalyzer:
         print("="*80)
         print()
         
-        confirm = input("Start analysis? (yes/no) [default: yes]: ").strip().lower() or 'yes'
+        confirm = input("Start audit? (yes/no) [default: yes]: ").strip().lower() or 'yes'
         
         if confirm not in ['y', 'yes']:
-            print("\nAnalysis cancelled.")
+            print("\nAudit cancelled.")
             sys.exit(0)
         
         print("\n" + "="*80)
-        print("STARTING ANALYSIS...")
+        print("STARTING AUDIT...")
         print("="*80)
         print()
     
@@ -231,7 +247,7 @@ class StorageAnalyzer:
     
     def analyze_ec2_storage(self, region):
         """Analyze EC2 EBS volume storage in a region"""
-        print(f"  → Analyzing EC2 volumes in {region}...")
+        print(f"  → Auditing EC2 volumes in {region}...")
         ec2 = self.session.client('ec2', region_name=region)
         total_gb = 0
         volume_count = 0
@@ -267,12 +283,12 @@ class StorageAnalyzer:
             return total_gb, volume_count, volumes_detail
             
         except ClientError as e:
-            print(f"    ✗ Error analyzing EC2 volumes: {e}")
+            print(f"    ✗ Error auditing EC2 volumes: {e}")
             return 0, 0, []
     
     def analyze_rds_storage(self, region):
         """Analyze RDS storage in a region"""
-        print(f"  → Analyzing RDS instances in {region}...")
+        print(f"  → Auditing RDS instances in {region}...")
         rds = self.session.client('rds', region_name=region)
         total_gb = 0
         instance_count = 0
@@ -301,12 +317,12 @@ class StorageAnalyzer:
             return total_gb, instance_count, instances_detail
             
         except ClientError as e:
-            print(f"    ✗ Error analyzing RDS instances: {e}")
+            print(f"    ✗ Error auditing RDS instances: {e}")
             return 0, 0, []
     
     def analyze_dynamodb_storage(self, region):
         """Analyze DynamoDB storage in a region"""
-        print(f"  → Analyzing DynamoDB tables in {region}...")
+        print(f"  → Auditing DynamoDB tables in {region}...")
         dynamodb = self.session.client('dynamodb', region_name=region)
         total_bytes = 0
         table_count = 0
@@ -342,12 +358,12 @@ class StorageAnalyzer:
             return total_gb, table_count, tables_detail
             
         except ClientError as e:
-            print(f"    ✗ Error analyzing DynamoDB tables: {e}")
+            print(f"    ✗ Error auditing DynamoDB tables: {e}")
             return 0, 0, []
     
     def analyze_aws_backups(self, region):
         """Analyze AWS Backup vaults and backup storage in a region"""
-        print(f"  → Analyzing AWS Backups in {region}...")
+        print(f"  → Auditing AWS Backups in {region}...")
         backup_client = self.session.client('backup', region_name=region)
         ec2 = self.session.client('ec2', region_name=region)
         rds = self.session.client('rds', region_name=region)
@@ -432,7 +448,7 @@ class StorageAnalyzer:
             if e.response['Error']['Code'] == 'AccessDeniedException':
                 print(f"    ⚠ Warning: Access denied to AWS Backup service in {region}")
             else:
-                print(f"    ✗ Error analyzing AWS Backups: {e}")
+                print(f"    ✗ Error auditing AWS Backups: {e}")
             return 0, 0, 0, [], {}
     
     def _extract_resource_id(self, resource_arn, resource_type):
@@ -509,7 +525,7 @@ class StorageAnalyzer:
     def analyze_region(self, region):
         """Analyze storage in a specific region"""
         print(f"\n{'='*80}")
-        print(f"Analyzing Region: {region}")
+        print(f"Auditing Region: {region}")
         print(f"{'='*80}")
         
         ec2_total, ec2_count, ec2_details = self.analyze_ec2_storage(region)
@@ -550,20 +566,20 @@ class StorageAnalyzer:
         
         return result
     
-    def run_analysis(self):
-        """Run the storage analysis across all configured regions"""
+    def run_audit(self):
+        """Run the storage audit across all configured regions"""
         for region in self.regions:
             try:
                 self.analyze_region(region)
             except Exception as e:
-                print(f"\n✗ Error analyzing region {region}: {e}")
+                print(f"\n✗ Error auditing region {region}: {e}")
                 continue
         
         self.print_summary()
         self.export_results()
     
     def print_summary(self):
-        """Print overall summary of storage analysis"""
+        """Print overall summary of storage audit"""
         print("\n" + "="*80)
         print("OVERALL STORAGE SUMMARY")
         print("="*80)
@@ -581,7 +597,7 @@ class StorageAnalyzer:
         total_backups = sum(r['backup_count'] for r in self.results)
         
         print(f"\nAccount: {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else ""))
-        print(f"Regions Analyzed: {len(self.regions)}")
+        print(f"Regions Audited: {len(self.regions)}")
         print(f"\n{'Service':<25} {'Storage (GB)':<20} {'Resource Count':<20}")
         print("-" * 65)
         print(f"{'EC2 (EBS)':<25} {total_ec2:>15,.2f}     {total_ec2_volumes:>15,}")
@@ -619,7 +635,7 @@ class StorageAnalyzer:
         try:
             with open(filename, 'w') as f:
                 f.write("="*80 + "\n")
-                f.write("AWS STORAGE ANALYSIS REPORT\n")
+                f.write("AWS STORAGE AUDIT REPORT\n")
                 f.write("="*80 + "\n\n")
                 f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"Account: {self.account_id}")
@@ -764,7 +780,7 @@ class StorageAnalyzer:
             ws_summary = wb.create_sheet("Executive Summary")
             
             # Report Header
-            ws_summary['A1'] = "AWS STORAGE ANALYSIS"
+            ws_summary['A1'] = "AWS STORAGE AUDIT"
             ws_summary['A1'].font = Font(size=16, bold=True, color="366092")
             ws_summary.merge_cells('A1:F1')
             
@@ -781,7 +797,7 @@ class StorageAnalyzer:
             ws_summary[f'A{row}'].font = Font(size=10)
             
             row += 1
-            ws_summary[f'A{row}'] = f"Regions Analyzed: {', '.join(self.regions)}"
+            ws_summary[f'A{row}'] = f"Regions Audited: {', '.join(self.regions)}"
             ws_summary[f'A{row}'].font = Font(size=10)
             
             row += 1
@@ -796,12 +812,12 @@ class StorageAnalyzer:
             ws_summary.merge_cells(f'A{row}:F{row}')
             
             row += 2
-            ws_summary[f'A{row}'] = "This report provides a comprehensive analysis of storage utilization across your AWS infrastructure."
+            ws_summary[f'A{row}'] = "This report provides a comprehensive audit of storage utilization across your AWS infrastructure."
             ws_summary.merge_cells(f'A{row}:F{row}')
             ws_summary[f'A{row}'].alignment = Alignment(wrap_text=True)
             
             row += 1
-            ws_summary[f'A{row}'] = "The analysis covers active storage resources (EC2 EBS volumes, RDS databases, DynamoDB tables) and backup storage (AWS Backup service)."
+            ws_summary[f'A{row}'] = "The audit covers active storage resources (EC2 EBS volumes, RDS databases, DynamoDB tables) and backup storage (AWS Backup service)."
             ws_summary.merge_cells(f'A{row}:F{row}')
             ws_summary[f'A{row}'].alignment = Alignment(wrap_text=True)
             
@@ -1242,19 +1258,19 @@ class StorageAnalyzer:
 
 def main():
     """Main entry point"""
-    analyzer = StorageAnalyzer()
+    auditor = StorageAuditor()
     
     try:
-        analyzer.setup_interactive()
-        analyzer.run_analysis()
+        auditor.setup_interactive()
+        auditor.run_audit()
         
         print("="*80)
-        print("ANALYSIS COMPLETE")
+        print("AUDIT COMPLETE")
         print("="*80)
         print()
         
     except KeyboardInterrupt:
-        print("\n\nAnalysis interrupted by user.")
+        print("\n\nAudit interrupted by user.")
         sys.exit(0)
     except Exception as e:
         print(f"\n✗ Fatal error: {e}")
