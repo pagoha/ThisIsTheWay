@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 AWS Storage Analyzer
-Analyzes storage usage across EC2, RDS, and DynamoDB in an AWS account.
+Analyzes storage usage across EC2, RDS, DynamoDB, and AWS Backups in an AWS account.
 """
 
 import boto3
@@ -288,6 +288,7 @@ class StorageAnalyzer:
                     
                     instances_detail.append({
                         'db_identifier': db['DBInstanceIdentifier'],
+                        'db_arn': db['DBInstanceArn'],
                         'engine': db['Engine'],
                         'engine_version': db['EngineVersion'],
                         'size_gb': size_gb,
@@ -327,6 +328,7 @@ class StorageAnalyzer:
                     
                     tables_detail.append({
                         'table_name': table_name,
+                        'table_arn': table['TableArn'],
                         'size_gb': round(size_bytes / (1024**3), 4),
                         'item_count': table.get('ItemCount', 0),
                         'status': table['TableStatus'],
@@ -343,6 +345,167 @@ class StorageAnalyzer:
             print(f"    ✗ Error analyzing DynamoDB tables: {e}")
             return 0, 0, []
     
+    def analyze_aws_backups(self, region):
+        """Analyze AWS Backup vaults and backup storage in a region"""
+        print(f"  → Analyzing AWS Backups in {region}...")
+        backup_client = self.session.client('backup', region_name=region)
+        ec2 = self.session.client('ec2', region_name=region)
+        rds = self.session.client('rds', region_name=region)
+        dynamodb = self.session.client('dynamodb', region_name=region)
+        
+        total_backup_size_gb = 0
+        total_source_size_gb = 0
+        backup_count = 0
+        backups_detail = []
+        vault_summary = defaultdict(lambda: {'backup_count': 0, 'backup_size_gb': 0, 'source_size_gb': 0})
+        
+        try:
+            # Get all backup vaults
+            vaults_response = backup_client.list_backup_vaults()
+            vaults = vaults_response.get('BackupVaultList', [])
+            
+            if not vaults:
+                print(f"    ℹ No backup vaults found in {region}")
+                return 0, 0, 0, backups_detail, dict(vault_summary)
+            
+            for vault in vaults:
+                vault_name = vault['BackupVaultName']
+                
+                try:
+                    # List recovery points (backups) in this vault
+                    paginator = backup_client.get_paginator('list_recovery_points_by_backup_vault')
+                    
+                    for page in paginator.paginate(BackupVaultName=vault_name):
+                        for recovery_point in page.get('RecoveryPoints', []):
+                            backup_size_bytes = recovery_point.get('BackupSizeInBytes', 0)
+                            backup_size_gb = round(backup_size_bytes / (1024**3), 4)
+                            
+                            resource_arn = recovery_point.get('ResourceArn', '')
+                            resource_type = recovery_point.get('ResourceType', 'Unknown')
+                            
+                            # Get source resource size
+                            source_size_gb = self._get_source_resource_size(
+                                resource_arn, 
+                                resource_type, 
+                                region, 
+                                ec2, 
+                                rds, 
+                                dynamodb
+                            )
+                            
+                            total_backup_size_gb += backup_size_gb
+                            total_source_size_gb += source_size_gb
+                            backup_count += 1
+                            
+                            # Update vault summary
+                            vault_summary[vault_name]['backup_count'] += 1
+                            vault_summary[vault_name]['backup_size_gb'] += backup_size_gb
+                            vault_summary[vault_name]['source_size_gb'] += source_size_gb
+                            
+                            backups_detail.append({
+                                'vault_name': vault_name,
+                                'recovery_point_arn': recovery_point.get('RecoveryPointArn', ''),
+                                'resource_arn': resource_arn,
+                                'resource_type': resource_type,
+                                'resource_id': self._extract_resource_id(resource_arn, resource_type),
+                                'source_size_gb': source_size_gb,
+                                'backup_size_gb': backup_size_gb,
+                                'creation_date': recovery_point.get('CreationDate', '').isoformat() if recovery_point.get('CreationDate') else 'N/A',
+                                'status': recovery_point.get('Status', 'Unknown'),
+                                'lifecycle': recovery_point.get('Lifecycle', {}).get('DeleteAfterDays', 'Never')
+                            })
+                            
+                except ClientError as e:
+                    if e.response['Error']['Code'] == 'AccessDeniedException':
+                        print(f"    ⚠ Warning: Access denied to vault {vault_name}")
+                    else:
+                        print(f"    ⚠ Warning: Error accessing vault {vault_name}: {e}")
+                    continue
+            
+            print(f"    ✓ Found {backup_count} backups in {len(vaults)} vaults")
+            print(f"      Backup Storage: {total_backup_size_gb:,.2f} GB")
+            print(f"      Source Storage: {total_source_size_gb:,.2f} GB")
+            
+            return total_backup_size_gb, total_source_size_gb, backup_count, backups_detail, dict(vault_summary)
+            
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'AccessDeniedException':
+                print(f"    ⚠ Warning: Access denied to AWS Backup service in {region}")
+            else:
+                print(f"    ✗ Error analyzing AWS Backups: {e}")
+            return 0, 0, 0, [], {}
+    
+    def _extract_resource_id(self, resource_arn, resource_type):
+        """Extract resource ID from ARN"""
+        if not resource_arn:
+            return 'N/A'
+        
+        try:
+            if resource_type == 'EBS':
+                # arn:aws:ec2:region:account:volume/vol-xxxxx
+                return resource_arn.split('/')[-1]
+            elif resource_type == 'RDS':
+                # arn:aws:rds:region:account:db:instance-name
+                return resource_arn.split(':')[-1]
+            elif resource_type == 'DynamoDB':
+                # arn:aws:dynamodb:region:account:table/table-name
+                return resource_arn.split('/')[-1]
+            elif resource_type == 'EC2':
+                # arn:aws:ec2:region:account:instance/i-xxxxx
+                return resource_arn.split('/')[-1]
+            else:
+                # Try to get the last part
+                if '/' in resource_arn:
+                    return resource_arn.split('/')[-1]
+                elif ':' in resource_arn:
+                    return resource_arn.split(':')[-1]
+                return resource_arn
+        except:
+            return resource_arn
+    
+    def _get_source_resource_size(self, resource_arn, resource_type, region, ec2_client, rds_client, dynamodb_client):
+        """Get the size of the source resource being backed up"""
+        try:
+            if resource_type == 'EBS':
+                volume_id = resource_arn.split('/')[-1]
+                response = ec2_client.describe_volumes(VolumeIds=[volume_id])
+                if response['Volumes']:
+                    return response['Volumes'][0]['Size']
+            
+            elif resource_type == 'EC2':
+                instance_id = resource_arn.split('/')[-1]
+                response = ec2_client.describe_instances(InstanceIds=[instance_id])
+                if response['Reservations']:
+                    total_size = 0
+                    for reservation in response['Reservations']:
+                        for instance in reservation['Instances']:
+                            for bdm in instance.get('BlockDeviceMappings', []):
+                                if 'Ebs' in bdm:
+                                    volume_id = bdm['Ebs']['VolumeId']
+                                    vol_response = ec2_client.describe_volumes(VolumeIds=[volume_id])
+                                    if vol_response['Volumes']:
+                                        total_size += vol_response['Volumes'][0]['Size']
+                    return total_size
+            
+            elif resource_type == 'RDS':
+                db_identifier = resource_arn.split(':')[-1]
+                response = rds_client.describe_db_instances(DBInstanceIdentifier=db_identifier)
+                if response['DBInstances']:
+                    return response['DBInstances'][0]['AllocatedStorage']
+            
+            elif resource_type == 'DynamoDB':
+                table_name = resource_arn.split('/')[-1]
+                response = dynamodb_client.describe_table(TableName=table_name)
+                if response['Table']:
+                    size_bytes = response['Table'].get('TableSizeBytes', 0)
+                    return round(size_bytes / (1024**3), 4)
+            
+        except Exception as e:
+            # Resource might have been deleted or we don't have permission
+            pass
+        
+        return 0
+    
     def analyze_region(self, region):
         """Analyze storage in a specific region"""
         print(f"\n{'='*80}")
@@ -352,6 +515,7 @@ class StorageAnalyzer:
         ec2_total, ec2_count, ec2_details = self.analyze_ec2_storage(region)
         rds_total, rds_count, rds_details = self.analyze_rds_storage(region)
         dynamo_total, dynamo_count, dynamo_details = self.analyze_dynamodb_storage(region)
+        backup_size, source_size, backup_count, backup_details, vault_summary = self.analyze_aws_backups(region)
         
         total_storage = ec2_total + rds_total + dynamo_total
         
@@ -366,6 +530,11 @@ class StorageAnalyzer:
             'dynamodb_storage_gb': dynamo_total,
             'dynamodb_table_count': dynamo_count,
             'dynamodb_details': dynamo_details,
+            'backup_storage_gb': backup_size,
+            'backup_source_storage_gb': source_size,
+            'backup_count': backup_count,
+            'backup_details': backup_details,
+            'vault_summary': vault_summary,
             'total_storage_gb': total_storage
         }
         
@@ -375,6 +544,8 @@ class StorageAnalyzer:
         print(f"    EC2 Storage:      {ec2_total:,.2f} GB ({ec2_count} volumes)")
         print(f"    RDS Storage:      {rds_total:,.2f} GB ({rds_count} instances)")
         print(f"    DynamoDB Storage: {dynamo_total:,.2f} GB ({dynamo_count} tables)")
+        print(f"    AWS Backups:      {backup_size:,.2f} GB ({backup_count} recovery points)")
+        print(f"    Backup Source:    {source_size:,.2f} GB (original resource sizes)")
         print(f"    Total Storage:    {total_storage:,.2f} GB")
         
         return result
@@ -400,30 +571,45 @@ class StorageAnalyzer:
         total_ec2 = sum(r['ec2_storage_gb'] for r in self.results)
         total_rds = sum(r['rds_storage_gb'] for r in self.results)
         total_dynamodb = sum(r['dynamodb_storage_gb'] for r in self.results)
+        total_backup_storage = sum(r['backup_storage_gb'] for r in self.results)
+        total_backup_source = sum(r['backup_source_storage_gb'] for r in self.results)
         grand_total = sum(r['total_storage_gb'] for r in self.results)
         
         total_ec2_volumes = sum(r['ec2_volume_count'] for r in self.results)
         total_rds_instances = sum(r['rds_instance_count'] for r in self.results)
         total_dynamo_tables = sum(r['dynamodb_table_count'] for r in self.results)
+        total_backups = sum(r['backup_count'] for r in self.results)
         
         print(f"\nAccount: {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else ""))
         print(f"Regions Analyzed: {len(self.regions)}")
-        print(f"\n{'Service':<20} {'Storage (GB)':<20} {'Resource Count':<20}")
-        print("-" * 60)
-        print(f"{'EC2 (EBS)':<20} {total_ec2:>15,.2f}     {total_ec2_volumes:>15,}")
-        print(f"{'RDS':<20} {total_rds:>15,.2f}     {total_rds_instances:>15,}")
-        print(f"{'DynamoDB':<20} {total_dynamodb:>15,.2f}     {total_dynamo_tables:>15,}")
-        print("-" * 60)
-        print(f"{'TOTAL':<20} {grand_total:>15,.2f}")
+        print(f"\n{'Service':<25} {'Storage (GB)':<20} {'Resource Count':<20}")
+        print("-" * 65)
+        print(f"{'EC2 (EBS)':<25} {total_ec2:>15,.2f}     {total_ec2_volumes:>15,}")
+        print(f"{'RDS':<25} {total_rds:>15,.2f}     {total_rds_instances:>15,}")
+        print(f"{'DynamoDB':<25} {total_dynamodb:>15,.2f}     {total_dynamo_tables:>15,}")
+        print(f"{'AWS Backup (stored)':<25} {total_backup_storage:>15,.2f}     {total_backups:>15,}")
+        print(f"{'AWS Backup (source)':<25} {total_backup_source:>15,.2f}")
+        print("-" * 65)
+        print(f"{'TOTAL (Active Storage)':<25} {grand_total:>15,.2f}")
+        print(f"{'TOTAL (inc. Backups)':<25} {grand_total + total_backup_storage:>15,.2f}")
         print()
+        
+        # Backup efficiency
+        if total_backup_source > 0:
+            compression_ratio = (total_backup_storage / total_backup_source) * 100
+            print(f"Backup Efficiency: {compression_ratio:.1f}% (backup size vs source size)")
+            print()
         
         # Region breakdown
         if len(self.regions) > 1:
             print("\nStorage by Region:")
-            print(f"{'Region':<20} {'Total Storage (GB)':<25}")
-            print("-" * 45)
+            print(f"{'Region':<20} {'Active (GB)':<20} {'Backup (GB)':<20} {'Total (GB)':<20}")
+            print("-" * 80)
             for result in sorted(self.results, key=lambda x: x['total_storage_gb'], reverse=True):
-                print(f"{result['region']:<20} {result['total_storage_gb']:>20,.2f}")
+                active_storage = result['total_storage_gb']
+                backup_storage = result['backup_storage_gb']
+                total = active_storage + backup_storage
+                print(f"{result['region']:<20} {active_storage:>15,.2f}     {backup_storage:>15,.2f}     {total:>15,.2f}")
             print()
     
     def export_to_text(self):
@@ -450,13 +636,18 @@ class StorageAnalyzer:
                 total_ec2 = sum(r['ec2_storage_gb'] for r in self.results)
                 total_rds = sum(r['rds_storage_gb'] for r in self.results)
                 total_dynamodb = sum(r['dynamodb_storage_gb'] for r in self.results)
+                total_backup_storage = sum(r['backup_storage_gb'] for r in self.results)
+                total_backup_source = sum(r['backup_source_storage_gb'] for r in self.results)
                 grand_total = sum(r['total_storage_gb'] for r in self.results)
                 
-                f.write(f"EC2 Storage Total (GB):      {total_ec2:,.2f}\n")
-                f.write(f"RDS Storage Total (GB):      {total_rds:,.2f}\n")
-                f.write(f"DynamoDB Storage Total (GB): {total_dynamodb:,.2f}\n")
+                f.write(f"EC2 Storage Total (GB):              {total_ec2:,.2f}\n")
+                f.write(f"RDS Storage Total (GB):              {total_rds:,.2f}\n")
+                f.write(f"DynamoDB Storage Total (GB):         {total_dynamodb:,.2f}\n")
+                f.write(f"AWS Backup Storage Total (GB):       {total_backup_storage:,.2f}\n")
+                f.write(f"AWS Backup Source Storage (GB):      {total_backup_source:,.2f}\n")
                 f.write(f"{'─'*40}\n")
-                f.write(f"TOTAL STORAGE (GB):          {grand_total:,.2f}\n\n")
+                f.write(f"TOTAL ACTIVE STORAGE (GB):           {grand_total:,.2f}\n")
+                f.write(f"TOTAL WITH BACKUPS (GB):             {grand_total + total_backup_storage:,.2f}\n\n")
                 
                 # Regional Details
                 for result in self.results:
@@ -467,7 +658,20 @@ class StorageAnalyzer:
                     f.write(f"EC2 Storage:      {result['ec2_storage_gb']:,.2f} GB ({result['ec2_volume_count']} volumes)\n")
                     f.write(f"RDS Storage:      {result['rds_storage_gb']:,.2f} GB ({result['rds_instance_count']} instances)\n")
                     f.write(f"DynamoDB Storage: {result['dynamodb_storage_gb']:,.2f} GB ({result['dynamodb_table_count']} tables)\n")
+                    f.write(f"AWS Backups:      {result['backup_storage_gb']:,.2f} GB ({result['backup_count']} recovery points)\n")
+                    f.write(f"Backup Source:    {result['backup_source_storage_gb']:,.2f} GB\n")
                     f.write(f"Total:            {result['total_storage_gb']:,.2f} GB\n\n")
+                    
+                    # Backup Vault Summary
+                    if result['vault_summary']:
+                        f.write("  Backup Vaults:\n")
+                        f.write("  " + "-"*76 + "\n")
+                        for vault_name, vault_data in result['vault_summary'].items():
+                            f.write(f"    Vault:        {vault_name}\n")
+                            f.write(f"    Backups:      {vault_data['backup_count']}\n")
+                            f.write(f"    Backup Size:  {vault_data['backup_size_gb']:,.2f} GB\n")
+                            f.write(f"    Source Size:  {vault_data['source_size_gb']:,.2f} GB\n")
+                            f.write("\n")
                     
                     # EC2 Details
                     if result['ec2_details']:
@@ -507,6 +711,21 @@ class StorageAnalyzer:
                             f.write(f"    Items:        {table['item_count']:,}\n")
                             f.write(f"    Status:       {table['status']}\n")
                             f.write(f"    Billing Mode: {table['billing_mode']}\n")
+                            f.write("\n")
+                    
+                    # Backup Details
+                    if result['backup_details']:
+                        f.write("  AWS Backup Recovery Points:\n")
+                        f.write("  " + "-"*76 + "\n")
+                        for backup in result['backup_details']:
+                            f.write(f"    Vault:         {backup['vault_name']}\n")
+                            f.write(f"    Resource Type: {backup['resource_type']}\n")
+                            f.write(f"    Resource ID:   {backup['resource_id']}\n")
+                            f.write(f"    Source Size:   {backup['source_size_gb']:.2f} GB\n")
+                            f.write(f"    Backup Size:   {backup['backup_size_gb']:.2f} GB\n")
+                            f.write(f"    Created:       {backup['creation_date']}\n")
+                            f.write(f"    Status:        {backup['status']}\n")
+                            f.write(f"    Retention:     {backup['lifecycle']}\n")
                             f.write("\n")
             
             print(f"✓ Text report exported to: {filename}")
@@ -563,6 +782,8 @@ class StorageAnalyzer:
             total_ec2 = sum(r['ec2_storage_gb'] for r in self.results)
             total_rds = sum(r['rds_storage_gb'] for r in self.results)
             total_dynamodb = sum(r['dynamodb_storage_gb'] for r in self.results)
+            total_backup_storage = sum(r['backup_storage_gb'] for r in self.results)
+            total_backup_source = sum(r['backup_source_storage_gb'] for r in self.results)
             
             ws_summary[f'A{row}'] = "EC2 (EBS)"
             ws_summary[f'B{row}'] = total_ec2
@@ -579,9 +800,25 @@ class StorageAnalyzer:
             ws_summary[f'C{row}'] = sum(r['dynamodb_table_count'] for r in self.results)
             
             row += 1
-            ws_summary[f'A{row}'] = "TOTAL"
+            ws_summary[f'A{row}'] = "AWS Backup (Stored)"
+            ws_summary[f'B{row}'] = total_backup_storage
+            ws_summary[f'C{row}'] = sum(r['backup_count'] for r in self.results)
+            
+            row += 1
+            ws_summary[f'A{row}'] = "AWS Backup (Source)"
+            ws_summary[f'B{row}'] = total_backup_source
+            ws_summary[f'C{row}'] = ""
+            
+            row += 1
+            ws_summary[f'A{row}'] = "TOTAL (Active)"
             ws_summary[f'A{row}'].font = Font(bold=True)
             ws_summary[f'B{row}'] = total_ec2 + total_rds + total_dynamodb
+            ws_summary[f'B{row}'].font = Font(bold=True)
+            
+            row += 1
+            ws_summary[f'A{row}'] = "TOTAL (inc. Backups)"
+            ws_summary[f'A{row}'].font = Font(bold=True)
+            ws_summary[f'B{row}'] = total_ec2 + total_rds + total_dynamodb + total_backup_storage
             ws_summary[f'B{row}'].font = Font(bold=True)
             
             # Regional breakdown
@@ -590,9 +827,10 @@ class StorageAnalyzer:
             ws_summary[f'B{row}'] = "EC2 (GB)"
             ws_summary[f'C{row}'] = "RDS (GB)"
             ws_summary[f'D{row}'] = "DynamoDB (GB)"
-            ws_summary[f'E{row}'] = "Total (GB)"
+            ws_summary[f'E{row}'] = "Backup (GB)"
+            ws_summary[f'F{row}'] = "Total (GB)"
             
-            for col in ['A', 'B', 'C', 'D', 'E']:
+            for col in ['A', 'B', 'C', 'D', 'E', 'F']:
                 ws_summary[f'{col}{row}'].fill = header_fill
                 ws_summary[f'{col}{row}'].font = header_font
                 ws_summary[f'{col}{row}'].border = border
@@ -603,10 +841,11 @@ class StorageAnalyzer:
                 ws_summary[f'B{row}'] = result['ec2_storage_gb']
                 ws_summary[f'C{row}'] = result['rds_storage_gb']
                 ws_summary[f'D{row}'] = result['dynamodb_storage_gb']
-                ws_summary[f'E{row}'] = result['total_storage_gb']
+                ws_summary[f'E{row}'] = result['backup_storage_gb']
+                ws_summary[f'F{row}'] = result['total_storage_gb'] + result['backup_storage_gb']
             
             # Auto-size columns
-            for col in ['A', 'B', 'C', 'D', 'E']:
+            for col in ['A', 'B', 'C', 'D', 'E', 'F']:
                 ws_summary.column_dimensions[col].width = 20
             
             # EC2 Details Sheet
@@ -687,6 +926,59 @@ class StorageAnalyzer:
             
             for col in ws_dynamo.columns:
                 ws_dynamo.column_dimensions[col[0].column_letter].width = 20
+            
+            # AWS Backup Details Sheet
+            ws_backup = wb.create_sheet("AWS Backups")
+            headers = ['Region', 'Vault Name', 'Resource Type', 'Resource ID', 'Source Size (GB)', 
+                      'Backup Size (GB)', 'Creation Date', 'Status', 'Retention']
+            ws_backup.append(headers)
+            
+            for col_num, _ in enumerate(headers, 1):
+                cell = ws_backup.cell(1, col_num)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.border = border
+            
+            for result in self.results:
+                for backup in result['backup_details']:
+                    ws_backup.append([
+                        result['region'],
+                        backup['vault_name'],
+                        backup['resource_type'],
+                        backup['resource_id'],
+                        backup['source_size_gb'],
+                        backup['backup_size_gb'],
+                        backup['creation_date'],
+                        backup['status'],
+                        str(backup['lifecycle'])
+                    ])
+            
+            for col in ws_backup.columns:
+                ws_backup.column_dimensions[col[0].column_letter].width = 20
+            
+            # Backup Vault Summary Sheet
+            ws_vault = wb.create_sheet("Backup Vaults")
+            headers = ['Region', 'Vault Name', 'Backup Count', 'Backup Size (GB)', 'Source Size (GB)']
+            ws_vault.append(headers)
+            
+            for col_num, _ in enumerate(headers, 1):
+                cell = ws_vault.cell(1, col_num)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.border = border
+            
+            for result in self.results:
+                for vault_name, vault_data in result['vault_summary'].items():
+                    ws_vault.append([
+                        result['region'],
+                        vault_name,
+                        vault_data['backup_count'],
+                        vault_data['backup_size_gb'],
+                        vault_data['source_size_gb']
+                    ])
+            
+            for col in ws_vault.columns:
+                ws_vault.column_dimensions[col[0].column_letter].width = 22
             
             wb.save(filename)
             print(f"✓ Excel report exported to: {filename}")
