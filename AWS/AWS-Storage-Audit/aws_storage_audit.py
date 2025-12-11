@@ -751,6 +751,8 @@ class StorageAnalyzer:
             # Styling
             header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
             header_font = Font(color="FFFFFF", bold=True)
+            section_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            section_font = Font(bold=True, size=12)
             border = Border(
                 left=Side(style='thin'),
                 right=Side(style='thin'),
@@ -758,17 +760,59 @@ class StorageAnalyzer:
                 bottom=Side(style='thin')
             )
             
-            # Summary Sheet
-            ws_summary = wb.create_sheet("Summary")
+            # Summary Sheet - Executive Report Style
+            ws_summary = wb.create_sheet("Executive Summary")
             
-            # Header
-            ws_summary['A1'] = "AWS Storage Analysis Summary"
-            ws_summary['A1'].font = Font(size=14, bold=True)
-            ws_summary['A2'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            ws_summary['A3'] = f"Account: {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else "")
+            # Report Header
+            ws_summary['A1'] = "AWS STORAGE ANALYSIS"
+            ws_summary['A1'].font = Font(size=16, bold=True, color="366092")
+            ws_summary.merge_cells('A1:F1')
             
-            # Overall totals
-            row = 5
+            ws_summary['A2'] = "Executive Summary Report"
+            ws_summary['A2'].font = Font(size=12, italic=True)
+            ws_summary.merge_cells('A2:F2')
+            
+            row = 4
+            ws_summary[f'A{row}'] = f"Report Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}"
+            ws_summary[f'A{row}'].font = Font(size=10)
+            
+            row += 1
+            ws_summary[f'A{row}'] = f"AWS Account: {self.account_id}" + (f" ({self.account_alias})" if self.account_alias else "")
+            ws_summary[f'A{row}'].font = Font(size=10)
+            
+            row += 1
+            ws_summary[f'A{row}'] = f"Regions Analyzed: {', '.join(self.regions)}"
+            ws_summary[f'A{row}'].font = Font(size=10)
+            
+            row += 1
+            ws_summary[f'A{row}'] = f"Analysis Profile: {self.profile_name}"
+            ws_summary[f'A{row}'].font = Font(size=10)
+            
+            # Executive Summary Section
+            row += 3
+            ws_summary[f'A{row}'] = "EXECUTIVE SUMMARY"
+            ws_summary[f'A{row}'].font = section_font
+            ws_summary[f'A{row}'].fill = section_fill
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            
+            row += 2
+            ws_summary[f'A{row}'] = "This report provides a comprehensive analysis of storage utilization across your AWS infrastructure."
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            ws_summary[f'A{row}'].alignment = Alignment(wrap_text=True)
+            
+            row += 1
+            ws_summary[f'A{row}'] = "The analysis covers active storage resources (EC2 EBS volumes, RDS databases, DynamoDB tables) and backup storage (AWS Backup service)."
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            ws_summary[f'A{row}'].alignment = Alignment(wrap_text=True)
+            
+            # Storage Overview Section
+            row += 3
+            ws_summary[f'A{row}'] = "STORAGE OVERVIEW"
+            ws_summary[f'A{row}'].font = section_font
+            ws_summary[f'A{row}'].fill = section_fill
+            ws_summary.merge_cells(f'A{row}:C{row}')
+            
+            row += 2
             ws_summary[f'A{row}'] = "Service"
             ws_summary[f'B{row}'] = "Total Storage (GB)"
             ws_summary[f'C{row}'] = "Resource Count"
@@ -777,6 +821,7 @@ class StorageAnalyzer:
                 ws_summary[f'{col}{row}'].fill = header_fill
                 ws_summary[f'{col}{row}'].font = header_font
                 ws_summary[f'{col}{row}'].border = border
+                ws_summary[f'{col}{row}'].alignment = Alignment(horizontal='center')
             
             row += 1
             total_ec2 = sum(r['ec2_storage_gb'] for r in self.results)
@@ -785,44 +830,97 @@ class StorageAnalyzer:
             total_backup_storage = sum(r['backup_storage_gb'] for r in self.results)
             total_backup_source = sum(r['backup_source_storage_gb'] for r in self.results)
             
-            ws_summary[f'A{row}'] = "EC2 (EBS)"
-            ws_summary[f'B{row}'] = total_ec2
+            ws_summary[f'A{row}'] = "EC2 (EBS Volumes)"
+            ws_summary[f'B{row}'] = round(total_ec2, 2)
             ws_summary[f'C{row}'] = sum(r['ec2_volume_count'] for r in self.results)
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
             
             row += 1
-            ws_summary[f'A{row}'] = "RDS"
-            ws_summary[f'B{row}'] = total_rds
+            ws_summary[f'A{row}'] = "RDS (Databases)"
+            ws_summary[f'B{row}'] = round(total_rds, 2)
             ws_summary[f'C{row}'] = sum(r['rds_instance_count'] for r in self.results)
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
             
             row += 1
-            ws_summary[f'A{row}'] = "DynamoDB"
-            ws_summary[f'B{row}'] = total_dynamodb
+            ws_summary[f'A{row}'] = "DynamoDB (Tables)"
+            ws_summary[f'B{row}'] = round(total_dynamodb, 2)
             ws_summary[f'C{row}'] = sum(r['dynamodb_table_count'] for r in self.results)
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
             
             row += 1
             ws_summary[f'A{row}'] = "AWS Backup (Stored)"
-            ws_summary[f'B{row}'] = total_backup_storage
+            ws_summary[f'B{row}'] = round(total_backup_storage, 2)
             ws_summary[f'C{row}'] = sum(r['backup_count'] for r in self.results)
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
             
             row += 1
             ws_summary[f'A{row}'] = "AWS Backup (Source)"
-            ws_summary[f'B{row}'] = total_backup_source
-            ws_summary[f'C{row}'] = ""
+            ws_summary[f'B{row}'] = round(total_backup_source, 2)
+            ws_summary[f'C{row}'] = "N/A"
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
             
             row += 1
-            ws_summary[f'A{row}'] = "TOTAL (Active)"
+            for col in ['A', 'B', 'C']:
+                ws_summary[f'{col}{row}'].border = Border(top=Side(style='double'))
+            
+            ws_summary[f'A{row}'] = "TOTAL (Active Storage)"
             ws_summary[f'A{row}'].font = Font(bold=True)
-            ws_summary[f'B{row}'] = total_ec2 + total_rds + total_dynamodb
+            ws_summary[f'B{row}'] = round(total_ec2 + total_rds + total_dynamodb, 2)
             ws_summary[f'B{row}'].font = Font(bold=True)
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
+            ws_summary[f'C{row}'].font = Font(bold=True)
             
             row += 1
             ws_summary[f'A{row}'] = "TOTAL (inc. Backups)"
+            ws_summary[f'A{row}'].font = Font(bold=True, color="C00000")
+            ws_summary[f'B{row}'] = round(total_ec2 + total_rds + total_dynamodb + total_backup_storage, 2)
+            ws_summary[f'B{row}'].font = Font(bold=True, color="C00000")
+            ws_summary[f'B{row}'].number_format = '#,##0.00'
+            ws_summary[f'C{row}'].font = Font(bold=True)
+            
+            # Key Metrics Section
+            row += 3
+            ws_summary[f'A{row}'] = "KEY METRICS"
+            ws_summary[f'A{row}'].font = section_font
+            ws_summary[f'A{row}'].fill = section_fill
+            ws_summary.merge_cells(f'A{row}:C{row}')
+            
+            row += 2
+            if total_backup_source > 0:
+                compression_ratio = (total_backup_storage / total_backup_source) * 100
+                ws_summary[f'A{row}'] = "Backup Efficiency:"
+                ws_summary[f'A{row}'].font = Font(bold=True)
+                ws_summary[f'B{row}'] = f"{compression_ratio:.1f}%"
+                ws_summary[f'C{row}'] = "(Backup size vs source size - lower is better)"
+                ws_summary.merge_cells(f'C{row}:F{row}')
+                
+                row += 1
+            
+            ws_summary[f'A{row}'] = "Total Regions:"
             ws_summary[f'A{row}'].font = Font(bold=True)
-            ws_summary[f'B{row}'] = total_ec2 + total_rds + total_dynamodb + total_backup_storage
-            ws_summary[f'B{row}'].font = Font(bold=True)
+            ws_summary[f'B{row}'] = len(self.regions)
+            
+            row += 1
+            ws_summary[f'A{row}'] = "Total Resources:"
+            ws_summary[f'A{row}'].font = Font(bold=True)
+            total_resources = (sum(r['ec2_volume_count'] for r in self.results) + 
+                             sum(r['rds_instance_count'] for r in self.results) + 
+                             sum(r['dynamodb_table_count'] for r in self.results))
+            ws_summary[f'B{row}'] = total_resources
+            
+            row += 1
+            ws_summary[f'A{row}'] = "Total Backup Points:"
+            ws_summary[f'A{row}'].font = Font(bold=True)
+            ws_summary[f'B{row}'] = sum(r['backup_count'] for r in self.results)
             
             # Regional breakdown
             row += 3
+            ws_summary[f'A{row}'] = "STORAGE BY REGION"
+            ws_summary[f'A{row}'].font = section_font
+            ws_summary[f'A{row}'].fill = section_fill
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            
+            row += 2
             ws_summary[f'A{row}'] = "Region"
             ws_summary[f'B{row}'] = "EC2 (GB)"
             ws_summary[f'C{row}'] = "RDS (GB)"
@@ -834,19 +932,160 @@ class StorageAnalyzer:
                 ws_summary[f'{col}{row}'].fill = header_fill
                 ws_summary[f'{col}{row}'].font = header_font
                 ws_summary[f'{col}{row}'].border = border
+                ws_summary[f'{col}{row}'].alignment = Alignment(horizontal='center')
             
-            for result in self.results:
+            for result in sorted(self.results, key=lambda x: x['total_storage_gb'] + x['backup_storage_gb'], reverse=True):
                 row += 1
                 ws_summary[f'A{row}'] = result['region']
-                ws_summary[f'B{row}'] = result['ec2_storage_gb']
-                ws_summary[f'C{row}'] = result['rds_storage_gb']
-                ws_summary[f'D{row}'] = result['dynamodb_storage_gb']
-                ws_summary[f'E{row}'] = result['backup_storage_gb']
-                ws_summary[f'F{row}'] = result['total_storage_gb'] + result['backup_storage_gb']
+                ws_summary[f'B{row}'] = round(result['ec2_storage_gb'], 2)
+                ws_summary[f'C{row}'] = round(result['rds_storage_gb'], 2)
+                ws_summary[f'D{row}'] = round(result['dynamodb_storage_gb'], 2)
+                ws_summary[f'E{row}'] = round(result['backup_storage_gb'], 2)
+                ws_summary[f'F{row}'] = round(result['total_storage_gb'] + result['backup_storage_gb'], 2)
+                
+                for col in ['B', 'C', 'D', 'E', 'F']:
+                    ws_summary[f'{col}{row}'].number_format = '#,##0.00'
+            
+            # Report Tabs Description Section
+            row += 4
+            ws_summary[f'A{row}'] = "DETAILED ANALYSIS TABS"
+            ws_summary[f'A{row}'].font = section_font
+            ws_summary[f'A{row}'].fill = section_fill
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            
+            row += 2
+            ws_summary[f'A{row}'] = "Tab Name"
+            ws_summary[f'A{row}'].font = Font(bold=True)
+            ws_summary[f'A{row}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            ws_summary[f'B{row}'] = "Description"
+            ws_summary[f'B{row}'].font = Font(bold=True)
+            ws_summary[f'B{row}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            ws_summary.merge_cells(f'B{row}:F{row}')
+            
+            # Tab descriptions
+            tab_descriptions = [
+                {
+                    'name': 'EC2 Volumes',
+                    'description': 'Detailed inventory of all EBS volumes across regions. Includes volume IDs, names (tags), sizes, types (gp3, io1, etc.), states (in-use, available), availability zones, and attachment information. Use this to identify unused volumes, oversized volumes, or opportunities for volume type optimization.'
+                },
+                {
+                    'name': 'RDS Instances',
+                    'description': 'Complete listing of RDS database instances with storage allocations. Shows database identifiers, engine types (MySQL, PostgreSQL, etc.), versions, allocated storage, storage types (gp2, io1), operational status, and Multi-AZ configuration. Critical for database capacity planning and cost optimization.'
+                },
+                {
+                    'name': 'DynamoDB Tables',
+                    'description': 'Comprehensive view of DynamoDB tables and their storage consumption. Displays table names, actual storage sizes, item counts, table status, and billing modes (On-Demand vs Provisioned). Essential for understanding NoSQL database footprint and usage patterns.'
+                },
+                {
+                    'name': 'AWS Backups',
+                    'description': 'Detailed recovery point inventory showing all AWS Backup snapshots and their storage impact. Lists backup vaults, resource types being protected (EC2, RDS, EBS, DynamoDB), original resource sizes vs compressed backup sizes, creation dates, status, and retention policies. Use this to understand backup costs and validate protection coverage.'
+                },
+                {
+                    'name': 'Backup Vaults',
+                    'description': 'Aggregated view of backup vaults with summary statistics. Shows total backup counts, cumulative backup storage, and total source storage per vault. Helps identify backup vault utilization and storage efficiency by comparing backup size to original resource size.'
+                }
+            ]
+            
+            for tab_info in tab_descriptions:
+                row += 1
+                ws_summary[f'A{row}'] = tab_info['name']
+                ws_summary[f'A{row}'].font = Font(bold=True, color="366092")
+                ws_summary[f'A{row}'].alignment = Alignment(vertical='top')
+                
+                ws_summary[f'B{row}'] = tab_info['description']
+                ws_summary[f'B{row}'].alignment = Alignment(wrap_text=True, vertical='top')
+                ws_summary.merge_cells(f'B{row}:F{row}')
+                ws_summary.row_dimensions[row].height = 45
+            
+            # Key Insights Section
+            row += 3
+            ws_summary[f'A{row}'] = "KEY INSIGHTS & RECOMMENDATIONS"
+            ws_summary[f'A{row}'].font = section_font
+            ws_summary[f'A{row}'].fill = section_fill
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            
+            row += 2
+            
+            # Generate insights based on data
+            insights = []
+            
+            # Check for unattached volumes
+            unattached_volumes = 0
+            unattached_storage = 0
+            for result in self.results:
+                for vol in result['ec2_details']:
+                    if vol['attached_to'] == 'Not attached':
+                        unattached_volumes += 1
+                        unattached_storage += vol['size_gb']
+            
+            if unattached_volumes > 0:
+                insights.append(f"• Found {unattached_volumes} unattached EBS volumes totaling {unattached_storage:,.2f} GB. Consider deleting unused volumes to reduce costs.")
+            
+            # Check backup efficiency
+            if total_backup_source > 0:
+                compression_ratio = (total_backup_storage / total_backup_source) * 100
+                if compression_ratio > 80:
+                    insights.append(f"• Backup compression ratio is {compression_ratio:.1f}%. This is relatively high - consider reviewing backup policies or using alternative backup strategies for large datasets.")
+                elif compression_ratio < 30:
+                    insights.append(f"• Backup compression ratio is {compression_ratio:.1f}%. Excellent backup efficiency achieved through deduplication and compression.")
+            
+            # Check for backup coverage
+            total_active_resources = (sum(r['ec2_volume_count'] for r in self.results) + 
+                                    sum(r['rds_instance_count'] for r in self.results) + 
+                                    sum(r['dynamodb_table_count'] for r in self.results))
+            
+            if total_backup_source < (total_ec2 + total_rds + total_dynamodb) * 0.3:
+                insights.append(f"• Only {(total_backup_source / (total_ec2 + total_rds + total_dynamodb) * 100):.1f}% of active storage is being backed up. Review backup policies to ensure adequate data protection.")
+            
+            # Check regional distribution
+            if len(self.regions) > 1:
+                largest_region = max(self.results, key=lambda x: x['total_storage_gb'])
+                if largest_region['total_storage_gb'] > sum(r['total_storage_gb'] for r in self.results) * 0.7:
+                    insights.append(f"• {largest_region['region']} contains {(largest_region['total_storage_gb'] / sum(r['total_storage_gb'] for r in self.results) * 100):.1f}% of total storage. Consider geographic distribution for disaster recovery.")
+            
+            # DynamoDB insights
+            if total_dynamodb > 100:
+                insights.append(f"• DynamoDB storage is {total_dynamodb:,.2f} GB. Review table usage patterns and consider enabling Point-in-Time Recovery for critical tables.")
+            
+            if not insights:
+                insights.append("• Storage distribution appears well-balanced across services and regions.")
+                insights.append("• Continue monitoring storage growth trends and backup coverage.")
+            
+            for insight in insights:
+                row += 1
+                ws_summary[f'A{row}'] = insight
+                ws_summary.merge_cells(f'A{row}:F{row}')
+                ws_summary[f'A{row}'].alignment = Alignment(wrap_text=True)
+                ws_summary.row_dimensions[row].height = 30
+            
+            # Footer
+            row += 3
+            ws_summary[f'A{row}'] = "Notes:"
+            ws_summary[f'A{row}'].font = Font(bold=True, size=9)
+            row += 1
+            ws_summary[f'A{row}'] = "• All storage sizes are reported in Gigabytes (GB)"
+            ws_summary[f'A{row}'].font = Font(size=9, italic=True)
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            row += 1
+            ws_summary[f'A{row}'] = "• Backup (Source) refers to the original size of resources being backed up"
+            ws_summary[f'A{row}'].font = Font(size=9, italic=True)
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            row += 1
+            ws_summary[f'A{row}'] = "• Backup (Stored) refers to the actual compressed/deduplicated backup storage consumed"
+            ws_summary[f'A{row}'].font = Font(size=9, italic=True)
+            ws_summary.merge_cells(f'A{row}:F{row}')
+            row += 1
+            ws_summary[f'A{row}'] = f"• Analysis performed using AWS profile: {self.profile_name}"
+            ws_summary[f'A{row}'].font = Font(size=9, italic=True)
+            ws_summary.merge_cells(f'A{row}:F{row}')
             
             # Auto-size columns
-            for col in ['A', 'B', 'C', 'D', 'E', 'F']:
-                ws_summary.column_dimensions[col].width = 20
+            ws_summary.column_dimensions['A'].width = 25
+            ws_summary.column_dimensions['B'].width = 20
+            ws_summary.column_dimensions['C'].width = 20
+            ws_summary.column_dimensions['D'].width = 20
+            ws_summary.column_dimensions['E'].width = 20
+            ws_summary.column_dimensions['F'].width = 20
             
             # EC2 Details Sheet
             ws_ec2 = wb.create_sheet("EC2 Volumes")
@@ -985,6 +1224,8 @@ class StorageAnalyzer:
             
         except Exception as e:
             print(f"✗ Error exporting to Excel: {e}")
+            import traceback
+            traceback.print_exc()
     
     def export_results(self):
         """Export results to all configured formats"""
