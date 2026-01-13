@@ -23,7 +23,7 @@ A comprehensive tool to analyze EC2 instances across multiple AWS accounts and r
 ## 📋 Prerequisites
 
 - Python 3.6+
-- AWS credentials configured (via `~/.aws/credentials` or environment variables)
+- AWS credentials configured (via `~/.aws/credentials`, `~/.aws/config`, or environment variables)
 - Required Python packages:
 pip install boto3 pandas configparser
 
